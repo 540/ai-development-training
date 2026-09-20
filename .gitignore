@@ -8,3 +8,7 @@
 node_modules/
 dist/
 *.tsbuildinfo
+
+# Mutation testing
+reports/
+.stryker-tmp/
