@@ -1,5 +1,5 @@
 const COMPOSITION_ROOT = '^src/composition-root\\.tsx$'
-const ENTRY_POINT = '^src/main\\.tsx$'
+const ENTRY_POINTS = ['^src/main\.tsx$', '^tools/crap/cli\.ts$']
 
 function layerRule(name, from, to) {
   return {
@@ -39,7 +39,7 @@ module.exports = {
       name: 'sin-huerfanos',
       severity: 'error',
       comment: 'Un módulo que nadie importa es código muerto',
-      from: { orphan: true, pathNot: [ENTRY_POINT] },
+      from: { orphan: true, pathNot: ENTRY_POINTS },
       to: {},
     },
   ],

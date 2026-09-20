@@ -11,8 +11,8 @@ export default defineConfig({
     coverage: {
       provider: 'istanbul',
       all: true,
-      include: ['src/**/*.{ts,tsx}'],
-      exclude: ['src/main.tsx'],
+      include: ['src/**/*.{ts,tsx}', 'tools/**/*.ts'],
+      exclude: ['src/main.tsx', 'tools/crap/cli.ts'],
       reporter: ['text', 'json'],
       reportsDirectory: 'reports/coverage',
       thresholds: {
@@ -20,6 +20,7 @@ export default defineConfig({
         'src/application/**': { lines: 100, branches: 100 },
         'src/infrastructure/**': { lines: 90, branches: 90 },
         'src/ui/**': { lines: 60, branches: 60 },
+        'tools/**': { lines: 100, branches: 100 },
       },
     },
   },
