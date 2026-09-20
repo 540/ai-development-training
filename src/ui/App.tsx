@@ -1,16 +1,20 @@
 import { useEffect, useState } from 'react'
 import { viewPokemon, type PokemonView } from '../application/view-pokemon'
-import { pokeApiPokemonRepository } from '../infrastructure/poke-api'
+import type { PokemonRepository } from '../domain/pokemon-repository'
 
 const SEED_POKEDEX_ID = 1
 
-export function App() {
+type AppProps = {
+  pokemonRepository: PokemonRepository
+}
+
+export function App({ pokemonRepository }: AppProps) {
   const [pokemon, setPokemon] = useState<PokemonView | null>(null)
 
   useEffect(() => {
     let abandoned = false
 
-    void viewPokemon(pokeApiPokemonRepository(), SEED_POKEDEX_ID).then((view) => {
+    void viewPokemon(pokemonRepository, SEED_POKEDEX_ID).then((view) => {
       if (!abandoned) {
         setPokemon(view)
       }
@@ -19,7 +23,7 @@ export function App() {
     return () => {
       abandoned = true
     }
-  }, [])
+  }, [pokemonRepository])
 
   if (pokemon === null) {
     return <p data-testid="loading">Cargando…</p>

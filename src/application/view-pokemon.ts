@@ -1,6 +1,6 @@
 import { pokedexNumberOf } from '../domain/pokedex-number'
 import { displayNameOf } from '../domain/pokemon-name'
-import type { PokemonRepository } from './pokemon-repository'
+import type { PokemonRepository } from '../domain/pokemon-repository'
 
 export type PokemonView = {
   pokedexNumber: string

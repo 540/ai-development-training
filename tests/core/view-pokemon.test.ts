@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { viewPokemon } from '../../src/application/view-pokemon'
-import type { PokemonRepository } from '../../src/application/pokemon-repository'
+import type { PokemonRepository } from '../../src/domain/pokemon-repository'
 
 const kantoRepository: PokemonRepository = {
   findByPokedexId: async (pokedexId) => ({

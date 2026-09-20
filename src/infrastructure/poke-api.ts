@@ -1,5 +1,5 @@
 import type { Pokemon } from '../domain/pokemon'
-import type { PokemonRepository } from '../application/pokemon-repository'
+import type { PokemonRepository } from '../domain/pokemon-repository'
 
 export const POKE_API_BASE_URL = 'https://pokeapi.co/api/v2'
 
