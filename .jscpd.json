@@ -1,0 +1,15 @@
+{
+  "minTokens": 50,
+  "threshold": 0,
+  "exitCode": 1,
+  "format": ["typescript", "tsx"],
+  "reporters": ["consoleFull", "json"],
+  "output": "reports/jscpd",
+  "absolute": false,
+  "gitignore": true,
+  "ignore": [
+    "**/tests/fixtures/**",
+    "*.config.{js,ts,cjs}",
+    ".dependency-cruiser.cjs"
+  ]
+}
