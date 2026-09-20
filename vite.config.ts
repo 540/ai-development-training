@@ -8,5 +8,19 @@ export default defineConfig({
     setupFiles: ['./tests/support/setup.ts'],
     include: ['tests/**/*.test.{ts,tsx}'],
     restoreMocks: true,
+    coverage: {
+      provider: 'istanbul',
+      all: true,
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: ['src/main.tsx'],
+      reporter: ['text', 'json'],
+      reportsDirectory: 'reports/coverage',
+      thresholds: {
+        'src/domain/**': { lines: 100, branches: 100 },
+        'src/application/**': { lines: 100, branches: 100 },
+        'src/infrastructure/**': { lines: 90, branches: 90 },
+        'src/ui/**': { lines: 60, branches: 60 },
+      },
+    },
   },
 })

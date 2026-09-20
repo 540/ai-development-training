@@ -9,9 +9,10 @@
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit",
     "test": "vitest run",
-    "verify": "pnpm typecheck && pnpm arch && pnpm test && pnpm mutation",
+    "verify": "pnpm typecheck && pnpm arch && pnpm coverage && pnpm mutation",
     "mutation": "stryker run",
-    "arch": "depcruise src"
+    "arch": "depcruise src",
+    "coverage": "vitest run --coverage"
   },
   "dependencies": {
     "react": "^19.2.0",
@@ -28,6 +29,7 @@
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^5.0.4",
+    "@vitest/coverage-istanbul": "^3.2.7",
     "dependency-cruiser": "^18.3.1",
     "jsdom": "^28.0.0",
     "msw": "^2.11.5",
