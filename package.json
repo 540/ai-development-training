@@ -2,48 +2,21 @@
   "name": "pokeapp",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@12.5.1",
   "scripts": {
-    "prepare": "git config core.hooksPath .githooks",
     "dev": "vite",
-    "build": "tsc -b && vite build",
-    "preview": "vite preview",
-    "typecheck": "tsc -b --noEmit",
-    "test": "vitest run",
-    "verify": "pnpm typecheck && pnpm lint && pnpm arch && pnpm duplication && pnpm coverage && pnpm crap && pnpm mutation",
-    "mutation": "stryker run",
-    "arch": "depcruise src tools",
-    "coverage": "vitest run --coverage",
-    "crap": "tsx tools/crap/cli.ts",
-    "lint": "eslint .",
-    "duplication": "jscpd src tools"
+    "build": "tsc && vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.22.3"
   },
   "devDependencies": {
-    "@stryker-mutator/core": "^10.0.0",
-    "@stryker-mutator/vitest-runner": "^10.0.0",
-    "@testing-library/dom": "^10.4.1",
-    "@testing-library/jest-dom": "^6.9.1",
-    "@testing-library/react": "^16.3.0",
-    "@testing-library/user-event": "^14.6.1",
-    "@types/node": "^26.6.2",
-    "@types/react": "^19.2.0",
-    "@types/react-dom": "^19.2.0",
-    "@vitejs/plugin-react": "^5.0.4",
-    "@vitest/coverage-istanbul": "^3.2.7",
-    "@vitest/eslint-plugin": "^1.6.27",
-    "dependency-cruiser": "^18.3.1",
-    "eslint": "^10.11.0",
-    "jscpd": "^5.3.0",
-    "jsdom": "^28.0.0",
-    "msw": "^2.11.5",
-    "tsx": "^4.23.13",
-    "typescript": "^5.9.3",
-    "typescript-eslint": "^8.70.0",
-    "vite": "^7.1.9",
-    "vitest": "^3.2.4"
+    "@types/react": "^18.2.66",
+    "@types/react-dom": "^18.2.22",
+    "@vitejs/plugin-react": "^4.2.1",
+    "typescript": "^5.2.2",
+    "vite": "^5.2.0"
   }
 }

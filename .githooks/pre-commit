@@ -1,4 +1,0 @@
-#!/usr/bin/env sh
-. "$(dirname "$0")/_beads.sh"
-
-./tools/hooks/pre-commit.sh

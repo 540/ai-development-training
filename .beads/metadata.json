@@ -1,7 +1,0 @@
-{
-  "database": "dolt",
-  "backend": "dolt",
-  "dolt_mode": "embedded",
-  "dolt_database": "ai_development_training",
-  "project_id": "f6327f80-d17e-42c8-8bdb-f4a2e0d5a48c"
-}

@@ -1,0 +1,85 @@
+/* Pokemon Card Skeleton */
+
+.cardSkeleton {
+  position: relative;
+  flex-shrink: 0;
+  width: 300px;
+  height: 440px;
+
+  border-radius: 12px;
+  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+  background: #f1f1f1;
+}
+
+.cardSkeletonHeader {
+  display: flex;
+  align-items: center;
+  padding: 24px 24px 0px 24px;
+}
+
+.cardSkeletonHeaderName {
+  width: 150px;
+  height: 32px;
+  margin-right: auto;
+  background: white;
+  border-radius: 100px;
+}
+
+.cardSkeletonHeaderCode {
+  width: 50px;
+  height: 24px;
+  background: white;
+  border-radius: 100px;
+}
+
+.cardSkeletonBody {
+  position: absolute;
+  bottom: 5px;
+  left: 5px;
+  right: 5px;
+  height: calc(100% - 160px);
+  background-color: transparent;
+  border-radius: 12px;
+}
+
+.cardSkeletonBodyPokemonImg {
+  position: absolute;
+  bottom: calc(100% - 30px);
+  left: 50%;
+  transform: translate(-50%, 0);
+  height: 100px;
+  width: 100px;
+  background: white;
+  border-radius: 100px;
+}
+
+.cardSkeletonBodyTypes {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 50px;
+}
+
+.cardSkeletonBodyTypeBadge {
+  height: 20px;
+  width: 50px;
+  border-radius: 100px;
+  background: white;
+}
+
+.cardSkeletonBodyDetails {
+  height: 40px;
+  margin: 16px auto;
+  width: 80%;
+  background: white;
+  border-radius: 8px;
+}
+
+.cardSkeletonBodyStats {
+  height: 60px;
+  margin: 12px auto;
+  width: 90%;
+  background: white;
+  border-radius: 8px;
+}

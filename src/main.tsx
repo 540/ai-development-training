@@ -1,11 +1,11 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import { createApp } from './composition-root'
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import { Router } from './ui/router'
+import './ui/styles/globals.css'
+import './di/index'
 
-const container = document.getElementById('root')
-
-if (container === null) {
-  throw new Error('Root container not found')
-}
-
-createRoot(container).render(<StrictMode>{createApp()}</StrictMode>)
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <Router />
+  </React.StrictMode>
+)

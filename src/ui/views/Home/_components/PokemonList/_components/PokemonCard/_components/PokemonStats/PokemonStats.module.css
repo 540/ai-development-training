@@ -1,0 +1,52 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  padding: 0 12px;
+
+  font-size: 10px;
+  line-height: 12px;
+}
+
+.statTitle {
+  width: 27px; /* Mejorar implementación */
+
+  font-weight: 700;
+  text-align: right;
+  color: var(--main-type);
+}
+
+.statBar[value] {
+  --color: var(--main-type);
+  --background: color-mix(in srgb, var(--color), #ffffff 70%);
+
+  appearance: none;
+  border: none;
+  height: 4px;
+  width: 75%; /* Mejorar implementación */
+  border-radius: 10px;
+
+  background: var(--background);
+}
+
+progress[value]::-webkit-progress-bar {
+  border-radius: 10px;
+  background: var(--background);
+}
+
+.statBar[value]::-webkit-progress-value {
+  border-radius: 10px;
+  background: var(--color);
+}
+
+.statBar[value]::-moz-progress-bar {
+  border-radius: 10px;
+  background: var(--color);
+}

@@ -1,0 +1,20 @@
+.container {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  border-radius: 100px;
+  height: 20px;
+  background-color: var(--type-color);
+  padding: 0 8px 0 4px;
+
+  font-size: 10px;
+  line-height: 12px;
+  font-weight: 700;
+  text-transform: capitalize;
+  color: white;
+}
+
+.image {
+  height: 16px;
+}
