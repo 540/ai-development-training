@@ -1,0 +1,395 @@
+:root {
+  --color-primary: #dc0a2d;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* cabecera */
+.cabecera {
+  border-bottom: 1px solid rgb(204, 204, 204);
+}
+
+.cabecera-dentro {
+  display: flex;
+  justify-content: space-between;
+  margin: 0 auto;
+  max-width: 991px;
+  padding: 24px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.menu {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  list-style: none;
+}
+
+.activo {
+  border-bottom: 2px solid var(--color-primary);
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 0 auto;
+  max-width: 991px;
+  padding: 16px;
+}
+
+/* buscador */
+.buscador {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+}
+
+.sel-gen {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 200px;
+  max-width: 100%;
+  padding: 8px;
+  background-color: white;
+}
+
+.input-buscar {
+  width: 350px;
+  max-width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.filtro-stat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.sel {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 8px;
+  background-color: white;
+  min-width: 80px;
+}
+
+.input-valor {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 8px;
+  width: 80px;
+}
+
+/* listado */
+.lista {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  flex-shrink: 0;
+  width: 300px;
+  height: 440px;
+  border-radius: 12px;
+  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.25);
+}
+
+.card-cargando {
+  background-color: #e0e0e0;
+}
+
+.card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 24px 0px 24px;
+  color: white;
+  font-weight: 700;
+}
+
+.card-nombre {
+  font-size: 24px;
+  text-transform: capitalize;
+}
+
+.card-num {
+  font-size: 12px;
+}
+
+.card-body {
+  position: relative;
+  margin: 5px;
+  height: calc(100% - 160px);
+  background-color: white;
+  border-radius: 12px;
+}
+
+.card-img {
+  position: absolute;
+  bottom: calc(100% - 49px);
+  left: 50%;
+  transform: translate(-50%, 0);
+  height: 140px;
+  max-width: 250px;
+}
+
+.card-tipos {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding-top: 56px;
+}
+
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 100px;
+  height: 20px;
+  padding: 0 8px 0 4px;
+  font-size: 10px;
+  line-height: 12px;
+  font-weight: 700;
+  text-transform: capitalize;
+  color: white;
+}
+
+.chip-grande {
+  height: 24px;
+  padding: 0 10px 0 6px;
+  font-size: 12px;
+  line-height: 14px;
+}
+
+.card-about {
+  margin-top: 16px;
+  margin-bottom: 16px;
+  text-align: center;
+  font-size: 14px;
+  line-height: 16px;
+  font-weight: 700;
+}
+
+.card-datos {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.dato {
+  padding: 0 24px;
+  border-right: 1px solid #e0e0e0;
+}
+
+.dato:last-child {
+  border-right: none;
+}
+
+.dato-valor {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 10px;
+  line-height: 12px;
+}
+
+.dato-valor img {
+  height: 16px;
+  width: 16px;
+  margin-right: 8px;
+}
+
+.dato-titulo {
+  text-align: center;
+  font-size: 8px;
+  line-height: 12px;
+  color: #666666;
+}
+
+.stats {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  list-style: none;
+}
+
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 12px;
+  font-size: 10px;
+  line-height: 12px;
+}
+
+.stat-nombre {
+  width: 27px;
+  font-weight: 700;
+  text-align: right;
+  color: var(--c);
+}
+
+.stat-barra[value] {
+  --fondo: color-mix(in srgb, var(--c), #ffffff 70%);
+  appearance: none;
+  border: none;
+  height: 4px;
+  width: 75%;
+  border-radius: 10px;
+  background: var(--fondo);
+}
+
+.stat-barra[value]::-webkit-progress-bar {
+  border-radius: 10px;
+  background: var(--fondo);
+}
+
+.stat-barra[value]::-webkit-progress-value {
+  border-radius: 10px;
+  background: var(--c);
+}
+
+.stat-barra[value]::-moz-progress-bar {
+  border-radius: 10px;
+  background: var(--c);
+}
+
+/* ficha */
+.ficha {
+  max-width: 1000px;
+  width: 100%;
+  margin: 0 auto;
+  background-color: #fff;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.ficha-cabecera {
+  padding: 40px 32px 100px;
+  position: relative;
+  color: white;
+}
+
+.ficha-cabecera h1 {
+  font-size: 36px;
+  font-weight: 800;
+  text-transform: capitalize;
+  margin: 0 0 8px 0;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.ficha-cabecera > p {
+  font-size: 18px;
+  font-weight: 600;
+  opacity: 0.9;
+  margin-bottom: 20px;
+}
+
+.ficha-imagen {
+  position: absolute;
+  right: 32px;
+  bottom: -80px;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+.ficha-imagen img {
+  width: 140px;
+  height: 140px;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.3));
+}
+
+.ficha-contenido {
+  padding: 100px 32px 32px;
+}
+
+.ficha-datos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 24px;
+  margin-bottom: 72px;
+}
+
+.ficha-dato {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px;
+  background-color: #f8f9fa;
+  border-radius: 16px;
+}
+
+.ficha-titulo {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 24px;
+  border-bottom-width: 3px;
+  border-bottom-style: solid;
+  padding-bottom: 8px;
+  display: inline-block;
+}
+
+.ficha-stats {
+  background-color: #f8f9fa;
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.ficha-stat {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 0;
+  font-size: 14px;
+  line-height: 16px;
+}

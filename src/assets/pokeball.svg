@@ -1,0 +1,25 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="32"
+  height="32"
+  fill="none"
+  viewBox="0 0 24 25"
+>
+  <!-- Mitad inferior (blanca con borde) -->
+  <path
+    fill="#ffffff"
+    stroke="#212121"
+    stroke-width="1"
+    d="M12 24c6.045 0 11.047-4.47 11.878-10.286H16.85a5.145 5.145 0 0 1-9.7 0H.122C.953 19.53 5.955 24 12 24Z"
+  />
+  <!-- Mitad superior (roja) -->
+  <path
+    fill="#dc0a2d"
+    d="M7.15 10.286H.122C.953 4.47 5.955 0 12 0s11.047 4.47 11.878 10.286H16.85a5.145 5.145 0 0 0-9.7 0H7.15Z"
+  />
+  <!-- Círculo central -->
+  <path
+    fill="#212121"
+    d="M14.857 12a2.857 2.857 0 1 1-5.714 0 2.857 2.857 0 0 1 5.714 0Z"
+  />
+</svg>
