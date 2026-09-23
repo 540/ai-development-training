@@ -7,8 +7,8 @@
   height: 440px;
 
   border-radius: 12px;
-  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
-  background: #f1f1f1;
+  box-shadow: 2px 2px 4px var(--color-shadow-soft);
+  background: var(--color-neutral-100);
 }
 
 .cardSkeletonHeader {
@@ -21,14 +21,14 @@
   width: 150px;
   height: 32px;
   margin-right: auto;
-  background: white;
+  background: var(--color-white);
   border-radius: 100px;
 }
 
 .cardSkeletonHeaderCode {
   width: 50px;
   height: 24px;
-  background: white;
+  background: var(--color-white);
   border-radius: 100px;
 }
 
@@ -49,7 +49,7 @@
   transform: translate(-50%, 0);
   height: 100px;
   width: 100px;
-  background: white;
+  background: var(--color-white);
   border-radius: 100px;
 }
 
@@ -65,14 +65,14 @@
   height: 20px;
   width: 50px;
   border-radius: 100px;
-  background: white;
+  background: var(--color-white);
 }
 
 .cardSkeletonBodyDetails {
   height: 40px;
   margin: 16px auto;
   width: 80%;
-  background: white;
+  background: var(--color-white);
   border-radius: 8px;
 }
 
@@ -80,6 +80,6 @@
   height: 60px;
   margin: 12px auto;
   width: 90%;
-  background: white;
+  background: var(--color-white);
   border-radius: 8px;
 }

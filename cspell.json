@@ -1,0 +1,35 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "files": [
+    "src/**/*.{ts,tsx,css}"
+  ],
+  "ignorePaths": [
+    "node_modules",
+    "dist",
+    "src/**/*.svg"
+  ],
+  "words": [
+    "alola",
+    "bulbasaur",
+    "charmander",
+    "galar",
+    "hoenn",
+    "johto",
+    "kalos",
+    "kanto",
+    "paldea",
+    "pikachu",
+    "pokeapi",
+    "pokeball",
+    "pokemons",
+    "poké",
+    "pokédex",
+    "pokémon",
+    "pokémons",
+    "satk",
+    "sdef",
+    "sinnoh",
+    "unova"
+  ]
+}

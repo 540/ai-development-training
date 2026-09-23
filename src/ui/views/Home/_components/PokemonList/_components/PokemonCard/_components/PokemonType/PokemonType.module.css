@@ -12,7 +12,7 @@
   line-height: 12px;
   font-weight: 700;
   text-transform: capitalize;
-  color: white;
+  color: var(--color-white);
 }
 
 .image {

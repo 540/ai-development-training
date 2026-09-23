@@ -1,47 +1,47 @@
 import { PokemonType } from './PokemonType'
 
 /**
- * Interfaz que define la estructura de un Pokémon
+ * Shape of a Pokémon
  */
 export interface Pokemon {
-  /** Identificador único del Pokémon */
+  /** Unique identifier of the Pokémon */
   id: string
-  /** Nombre del Pokémon */
+  /** Name of the Pokémon */
   name: string
-  /** Altura del Pokémon en decímetros */
+  /** Height of the Pokémon in meters */
   height: number
-  /** Peso del Pokémon en hectogramos */
+  /** Weight of the Pokémon in kilograms */
   weight: number
-  /** Array de tipos del Pokémon (ej: fuego, agua, etc.) */
+  /** Types of the Pokémon (e.g. fire, water) */
   types: PokemonType[]
-  /** Imágenes del Pokémon */
+  /** Images of the Pokémon */
   images: {
-    /** Imagen principal del Pokémon */
+    /** Main image of the Pokémon */
     main: string
-    /** Imagen alternativa del Pokémon */
+    /** Alternative image of the Pokémon */
     alt: string
   }
-  /** Estadísticas base del Pokémon */
+  /** Base stats of the Pokémon */
   stats: {
-    /** Puntos de vida */
+    /** Hit points */
     hp: number
-    /** Poder de ataque físico */
+    /** Physical attack */
     attack: number
-    /** Capacidad de defensa física */
+    /** Physical defense */
     defense: number
-    /** Poder de ataque especial */
+    /** Special attack */
     specialAttack: number
-    /** Capacidad de defensa especial */
+    /** Special defense */
     specialDefense: number
-    /** Velocidad del Pokémon */
+    /** Speed of the Pokémon */
     speed: number
   }
 }
 
-/** Tipo que representa los nombres de las estadísticas de un Pokémon */
+/** Names of the stats of a Pokémon */
 export type StatName = keyof Pokemon['stats']
 
-/** Array constante con todas las generaciones de Pokémon disponibles */
+/** Every available Pokémon generation */
 export const POKEMON_GENERATIONS = [
   'Kanto',
   'Johto',
@@ -54,5 +54,5 @@ export const POKEMON_GENERATIONS = [
   'Paldea',
 ] as const
 
-/** Tipo que representa una generación específica de Pokémon */
+/** A single Pokémon generation */
 export type PokemonGeneration = (typeof POKEMON_GENERATIONS)[number]

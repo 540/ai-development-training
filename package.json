@@ -3,9 +3,17 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "prepare": "git config core.hooksPath .githooks",
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "lint": "eslint .",
+    "lint:css": "stylelint \"src/**/*.css\"",
+    "spell": "cspell --no-progress --no-summary",
+    "arch": "depcruise src",
+    "verify": "pnpm typecheck && pnpm lint && pnpm lint:css && pnpm spell && pnpm arch && pnpm test"
   },
   "dependencies": {
     "react": "^18.2.0",
@@ -13,10 +21,22 @@
     "react-router-dom": "^6.22.3"
   },
   "devDependencies": {
+    "@testing-library/dom": "^10.4.0",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.1.0",
     "@types/react": "^18.2.66",
     "@types/react-dom": "^18.2.22",
     "@vitejs/plugin-react": "^4.2.1",
+    "@vitest/eslint-plugin": "^1.6.27",
+    "cspell": "^10.3.3",
+    "dependency-cruiser": "^18.4.0",
+    "eslint": "^9.39.5",
+    "eslint-plugin-unicorn": "^76.0.0",
+    "jsdom": "^25.0.1",
+    "stylelint": "^17.15.0",
     "typescript": "^5.2.2",
-    "vite": "^5.2.0"
+    "typescript-eslint": "^8.70.1",
+    "vite": "^5.2.0",
+    "vitest": "^2.1.9"
   }
 }

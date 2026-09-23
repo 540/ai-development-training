@@ -1,0 +1,23 @@
+#!/usr/bin/env sh
+set -e
+
+staged=$(git diff --cached --name-only --diff-filter=ACMR -- '*.ts' '*.tsx' '*.css')
+
+if [ -z "$staged" ]; then
+  exit 0
+fi
+
+code=$(printf '%s\n' "$staged" | grep -E '\.tsx?$' || true)
+styles=$(printf '%s\n' "$staged" | grep -E '\.css$' || true)
+
+pnpm typecheck
+if [ -n "$code" ]; then
+  printf '%s\n' "$code" | tr '\n' '\0' | xargs -0 pnpm exec eslint
+fi
+if [ -n "$styles" ]; then
+  printf '%s\n' "$styles" | tr '\n' '\0' | xargs -0 pnpm exec stylelint
+fi
+printf '%s\n' "$staged" | tr '\n' '\0' | xargs -0 pnpm exec cspell --no-progress --no-summary
+if [ -n "$code" ]; then
+  printf '%s\n' "$code" | tr '\n' '\0' | xargs -0 pnpm exec vitest related --run --passWithNoTests
+fi

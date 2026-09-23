@@ -1,13 +1,14 @@
 import { Details } from '../views/Details'
 import { Home } from '../views/Home'
+import { paths } from './paths'
 
 export const routes = {
   home: {
-    path: '/',
+    path: paths.home,
     element: Home,
   },
   details: {
-    path: '/:id',
+    path: paths.details,
     element: Details,
   },
 }

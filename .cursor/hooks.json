@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "hooks": {
+    "postToolUse": [{ "matcher": "Write", "command": "node tools/agentGuardrails.mjs edit cursor" }],
+    "stop": [{ "command": "node tools/agentGuardrails.mjs stop cursor", "loop_limit": 3 }]
+  }
+}

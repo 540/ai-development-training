@@ -16,7 +16,7 @@
 }
 
 .statTitle {
-  width: 27px; /* Mejorar implementación */
+  width: 27px; /* Improve implementation */
 
   font-weight: 700;
   text-align: right;
@@ -25,12 +25,12 @@
 
 .statBar[value] {
   --color: var(--main-type);
-  --background: color-mix(in srgb, var(--color), #ffffff 70%);
+  --background: color-mix(in srgb, var(--color), var(--color-white) 70%);
 
   appearance: none;
   border: none;
   height: 4px;
-  width: 75%; /* Mejorar implementación */
+  width: 75%; /* Improve implementation */
   border-radius: 10px;
 
   background: var(--background);

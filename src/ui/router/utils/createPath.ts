@@ -1,6 +1,6 @@
-import { routes } from '../routes'
+import { paths } from '../paths'
 
-type Path = keyof typeof routes
+type Path = keyof typeof paths
 type Params = Record<string, string>
 
 export interface Route {
@@ -9,7 +9,7 @@ export interface Route {
 }
 
 export const createPath = ({ path, params }: Route): string => {
-  let realPath = routes[path].path
+  let realPath = paths[path]
 
   for (const key in params) {
     realPath = realPath.replace(`:${key}`, params[key])

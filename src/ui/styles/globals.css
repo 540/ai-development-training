@@ -1,6 +1,19 @@
 :root {
   --color-primary: #dc0a2d;
 
+  --color-white: #ffffff;
+  --color-black: #000000;
+  --color-neutral-50: #f8f9fa;
+  --color-neutral-100: #f1f1f1;
+  --color-neutral-200: #e0e0e0;
+  --color-neutral-300: #cccccc;
+  --color-neutral-600: #666666;
+  --color-shadow-soft: rgba(0, 0, 0, 0.1);
+  --color-shadow: rgba(0, 0, 0, 0.2);
+  --color-shadow-strong: rgba(0, 0, 0, 0.25);
+  --color-shadow-image: rgba(0, 0, 0, 0.3);
+  --color-glass: rgba(255, 255, 255, 0.1);
+
   --color-bug: #a7b723;
   --color-dark: #75574c;
   --color-dragon: #7037ff;

@@ -1,0 +1,6 @@
+{
+  "hooks": {
+    "PostToolUse": [{ "type": "command", "command": "node tools/agentGuardrails.mjs edit copilot", "timeout": 60 }],
+    "Stop": [{ "type": "command", "command": "node tools/agentGuardrails.mjs stop copilot", "timeout": 300 }]
+  }
+}

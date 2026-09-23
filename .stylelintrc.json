@@ -1,0 +1,24 @@
+{
+  "rules": {
+    "selector-class-pattern": [
+      "^[a-z][a-zA-Z0-9]*$",
+      { "message": "CSS classes are camelCase, without hyphens or underscores" }
+    ],
+    "color-no-hex": [true, { "message": "Colors come from the variables in src/ui/styles/globals.css" }],
+    "color-named": ["never", { "message": "Colors come from the variables in src/ui/styles/globals.css" }],
+    "function-disallowed-list": [
+      ["rgb", "rgba", "hsl", "hsla"],
+      { "message": "Colors come from the variables in src/ui/styles/globals.css" }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["src/ui/styles/globals.css"],
+      "rules": {
+        "color-no-hex": null,
+        "color-named": null,
+        "function-disallowed-list": null
+      }
+    }
+  ]
+}

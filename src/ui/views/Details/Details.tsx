@@ -2,6 +2,7 @@ import { FC, useState, useEffect, CSSProperties } from 'react'
 import { PokemonCardSkeleton } from '../Home/_components/PokemonList/_components/PokemonCardSkeleton'
 import { useParams } from '@/ui/hooks/router'
 import { Pokemon } from '@/core/Pokemon/domain/Pokemon'
+import { pokemonService } from '@/core/Pokemon/services/Pokemon.service'
 import { PokemonType as PokemonTypeModel } from '@/core/Pokemon/domain/PokemonType'
 import { Main } from '@/ui/components/Main'
 import { COLORS } from '@/ui/styles/utils/colors'
@@ -52,110 +53,20 @@ const typeImages: Record<PokemonTypeModel, string> = {
   water,
 }
 
-// Interface para DTO
-interface PokemonDTO {
-  id: number
-  name: string
-  height: number
-  weight: number
-  types: Array<{
-    slot: number
-    type: {
-      name: string
-    }
-  }>
-  sprites: {
-    other: {
-      'official-artwork': {
-        front_default: string
-      }
-      dream_world: {
-        front_default: string
-      }
-    }
-  }
-  stats: Array<{
-    base_stat: number
-    stat: {
-      name:
-        | 'hp'
-        | 'attack'
-        | 'defense'
-        | 'special-attack'
-        | 'special-defense'
-        | 'speed'
-    }
-  }>
-}
-
 export const Details: FC = () => {
   const { id } = useParams()
   const [pokemon, setPokemon] = useState<Pokemon | undefined>(undefined)
   const [isValidating, setIsValidating] = useState(false)
   const [hasError, setHasError] = useState(false)
 
-  // Funciones utilitarias
-  const buildPokemon = (pokemonDTO: PokemonDTO): Pokemon => {
-    const mapStatsDTOToStats = (
-      stats: PokemonDTO['stats']
-    ): Pokemon['stats'] => {
-      const statsMap = stats.reduce((acc, { base_stat, stat }) => {
-        const statNameMapper: Record<
-          PokemonDTO['stats'][0]['stat']['name'],
-          keyof Pokemon['stats']
-        > = {
-          hp: 'hp',
-          attack: 'attack',
-          defense: 'defense',
-          'special-attack': 'specialAttack',
-          'special-defense': 'specialDefense',
-          speed: 'speed',
-        }
-
-        const statName = statNameMapper[stat.name]
-
-        return {
-          ...acc,
-          [statName]: base_stat,
-        }
-      }, {} as Pokemon['stats'])
-
-      return statsMap
-    }
-
-    return {
-      id: pokemonDTO.id.toString(),
-      name: pokemonDTO.name,
-      height: pokemonDTO.height / 10,
-      weight: pokemonDTO.weight / 10,
-      types: pokemonDTO.types.map(
-        ({ type }) => type.name as PokemonTypeModel
-      ),
-      images: {
-        main: pokemonDTO.sprites.other['official-artwork'].front_default,
-        alt: pokemonDTO.sprites.other.dream_world.front_default,
-      },
-      stats: mapStatsDTOToStats(pokemonDTO.stats),
-    }
-  }
-
-  // Función para cargar pokémon por ID
+  // Loads the Pokémon by id
   const loadPokemonById = async (pokemonId: string) => {
     try {
       setHasError(false)
       setIsValidating(true)
       setPokemon(undefined)
 
-      const response = await fetch(
-        `https://pokeapi.co/api/v2/pokemon/${pokemonId}`
-      )
-
-      if (!response.ok) {
-        throw new Error(`Error fetching pokemon ${pokemonId}`)
-      }
-
-      const pokemonDTO: PokemonDTO = await response.json()
-      const pokemonData = buildPokemon(pokemonDTO)
+      const pokemonData = await pokemonService.findById(pokemonId)
 
       setPokemon(pokemonData)
     } catch (error) {
@@ -165,7 +76,7 @@ export const Details: FC = () => {
     }
   }
 
-  // Effect para cargar pokémon cuando cambia el ID
+  // Reloads when the id changes
   useEffect(() => {
     if (id) {
       loadPokemonById(id)
@@ -204,7 +115,7 @@ export const Details: FC = () => {
   const mainTypeColor = COLORS[mainType]
   const secondaryTypeColor = secondaryType ? COLORS[secondaryType] : null
 
-  // Componente para mostrar un tipo de Pokémon
+  // Chip for a Pokémon type
   const PokemonTypeComponent: FC<{ type: PokemonTypeModel }> = ({ type }) => {
     const style = {
       '--type-color': COLORS[type],
@@ -223,7 +134,7 @@ export const Details: FC = () => {
     )
   }
 
-  // Componente para mostrar una estadística
+  // Row for a stat
   const StatComponent: FC<{ title: string; value: number }> = ({
     title,
     value,
@@ -235,7 +146,7 @@ export const Details: FC = () => {
     } as CSSProperties
 
     const statBarBgStyle = {
-      backgroundColor: `color-mix(in srgb, ${mainTypeColor}, #ffffff 70%)`,
+      backgroundColor: `color-mix(in srgb, ${mainTypeColor}, var(--color-white) 70%)`,
     } as CSSProperties
 
     const statBarStyle = {
@@ -259,11 +170,11 @@ export const Details: FC = () => {
   const headerStyle = {
     background: secondaryTypeColor
       ? `linear-gradient(135deg, ${mainTypeColor} 0%, ${secondaryTypeColor} 100%)`
-      : `linear-gradient(135deg, ${mainTypeColor} 0%, color-mix(in srgb, ${mainTypeColor}, #000000 20%) 100%)`,
+      : `linear-gradient(135deg, ${mainTypeColor} 0%, color-mix(in srgb, ${mainTypeColor}, var(--color-black) 20%) 100%)`,
   } as CSSProperties
 
   const aboutCardStyle = {
-    border: `2px solid color-mix(in srgb, ${mainTypeColor}, #ffffff 70%)`,
+    border: `2px solid color-mix(in srgb, ${mainTypeColor}, var(--color-white) 70%)`,
   } as CSSProperties
 
   const aboutCardValueStyle = {
@@ -276,7 +187,7 @@ export const Details: FC = () => {
   } as CSSProperties
 
   const statsContainerStyle = {
-    border: `2px solid color-mix(in srgb, ${mainTypeColor}, #ffffff 70%)`,
+    border: `2px solid color-mix(in srgb, ${mainTypeColor}, var(--color-white) 70%)`,
   } as CSSProperties
 
   return (
