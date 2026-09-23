@@ -43,59 +43,32 @@ export const Home: FC = () => {
   )
 }
 
+const COMPARISONS: Record<StatFilter['comparison'], (stat: number, value: number) => boolean> = {
+  greater: (stat, value) => stat > value,
+  equal: (stat, value) => stat === value,
+  less: (stat, value) => stat < value,
+}
+
+const matchesText = (pokemon: Pokemon, search: string): boolean => {
+  const text = search.toLowerCase()
+
+  return pokemon.name.toLowerCase().includes(text) || pokemon.types.some((type) => type.toLowerCase().includes(text))
+}
+
+const matchesStat = (pokemon: Pokemon, statFilter: StatFilter, isSearching: boolean): boolean => {
+  const comparison = statFilter.comparison === 'less' && isSearching ? 'greater' : statFilter.comparison
+
+  return COMPARISONS[comparison](pokemon.stats[statFilter.stat], statFilter.value)
+}
+
 const filterPokemons = (
   pokemons: Pokemon[] | undefined,
   search: string,
   statFilter: StatFilter
 ): Pokemon[] | undefined => {
-  if (!pokemons) {
-    return pokemons
-  }
+  const isSearching = search.trim().length > 0
 
-  return pokemons.filter((pokemon) => {
-    const s = search.toLowerCase()
-    let result = true
-    const stat = pokemon.stats[statFilter.stat]
-    let textOk = search.trim().length === 0
-    const val = statFilter.value
-    let statOk = true
-    const comp = statFilter.comparison
-    let found = false
-
-    if (!textOk) {
-      const name = pokemon.name.toLowerCase().includes(s)
-      if (name) {
-        found = true
-      }
-      let i = 0
-      while (i < pokemon.types.length && !found) {
-        if (pokemon.types[i].toLowerCase().includes(s)) {
-          found = true
-        }
-        i++
-      }
-      textOk = found
-    }
-
-    if (comp === 'greater') {
-      statOk = stat > val
-    } else if (comp === 'equal') {
-      statOk = stat === val
-    } else if (comp === 'less') {
-      if (textOk && search.trim().length > 0) {
-        statOk = stat > val
-      } else {
-        statOk = stat < val
-      }
-    }
-
-    if (!textOk) {
-      result = false
-    }
-    if (!statOk) {
-      result = false
-    }
-
-    return result
-  })
+  return pokemons?.filter(
+    (pokemon) => (!isSearching || matchesText(pokemon, search)) && matchesStat(pokemon, statFilter, isSearching)
+  )
 }

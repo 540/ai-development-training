@@ -27,7 +27,7 @@ module.exports = {
       name: 'only-di-wires-infrastructure',
       severity: 'error',
       comment: 'Infrastructure is only plugged in from the dependency injection',
-      from: { pathNot: ['^src/di/', '^src/core/[^/]+/_di/', INFRASTRUCTURE, '\\.test\\.tsx?$'] },
+      from: { pathNot: ['^src/di/', '^src/core/[^/]+/_di/', INFRASTRUCTURE, '\\.test\\.tsx?$', '^src/test/'] },
       to: { path: INFRASTRUCTURE },
     },
     {

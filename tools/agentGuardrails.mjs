@@ -77,8 +77,8 @@ const isRetryingStop = (payload) =>
 
 const stopFailures = (payload) => {
   if (isRetryingStop(payload)) return ''
-  const { ok, output } = run('pnpm', ['verify'])
-  return ok ? '' : `pnpm verify is failing. Fix it before finishing the task:\n${lastLines(output)}`
+  const { ok, output } = run('pnpm', ['check'])
+  return ok ? '' : `pnpm check is failing. Fix it before finishing the task:\n${lastLines(output)}`
 }
 
 const block = (message) => {

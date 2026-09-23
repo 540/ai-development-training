@@ -2,7 +2,8 @@
   "version": "0.2",
   "language": "en",
   "files": [
-    "src/**/*.{ts,tsx,css}"
+    "src/**/*.{ts,tsx,css}",
+    "tools/**/*.{ts,mjs}"
   ],
   "ignorePaths": [
     "node_modules",

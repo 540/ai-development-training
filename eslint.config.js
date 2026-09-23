@@ -11,7 +11,7 @@ export default [
     ignores: ['dist/', 'coverage/', 'reports/'],
   },
   {
-    files: ['src/**/*.{ts,tsx}'],
+    files: ['src/**/*.{ts,tsx}', 'tools/**/*.ts'],
     languageOptions: {
       parser: tseslint.parser,
     },
@@ -58,7 +58,7 @@ export default [
     },
   },
   {
-    files: ['src/**/*.test.{ts,tsx}'],
+    files: ['src/**/*.test.{ts,tsx}', 'tools/**/*.test.ts'],
     plugins: { vitest },
     rules: {
       'vitest/expect-expect': 'error',
