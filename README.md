@@ -1,8 +1,8 @@
-# Pokédex — con guardarraíles
+# Pokédex — especificación
 
 Pokédex sobre [PokéAPI](https://pokeapi.co): listado por generación con buscador y filtros, y ficha de cada Pokémon. Adaptada de [pokedex-taller-scpna](https://github.com/Endikaorve/pokedex-taller-scpna), de Endika Orve, con su permiso.
 
-La app es el pretexto. Esta rama trae los criterios del equipo automatizados con herramientas estándar, para que el agente los cumpla sin que nadie tenga que repetírselos.
+La app es el pretexto. Esta rama trae los criterios del equipo automatizados con herramientas estándar, para que el agente los cumpla sin que nadie tenga que repetírselos, y el conocimiento del negocio en `CONTEXT.md`.
 
 ## Los guardarraíles
 
@@ -40,6 +40,14 @@ Los hooks de git están en `.githooks/` y se instalan solos al instalar dependen
 
 ## Práctica
 
-Lanza este prompt a tu agente:
+Esta vez no se implementa: se especifica. Antes de empezar, instala las skills de interrogatorio:
+
+```bash
+npx skills@latest add mattpocock/skills --skill grill-me grilling
+```
+
+1. **A pelo.** Lanza el prompt y pide los criterios de aceptación con los que darías la tarea por terminada. Sin implementar.
+2. **Interrogatorio.** En sesión nueva, lanza `/grill-me` con el mismo prompt hasta que pueda escribir los criterios de aceptación. Contesta tú como negocio.
+3. **Cotejo.** ¿Qué salió solo en la segunda vuelta? ¿Estaba escrito en algún sitio?
 
 > Añade al proyecto web una tabla interactiva con las ventajas y desventajas entre todos los tipos de Pokémon.

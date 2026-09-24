@@ -10,3 +10,7 @@ Pokédex sobre PokéAPI en React y TypeScript: listado por generación con busca
 - Nada de `any`.
 - Nada de colores en crudo: se usan las variables de `src/ui/styles/globals.css`, y si hace falta uno nuevo se añade allí.
 - Antes de dar una tarea por terminada, `pnpm verify` tiene que pasar.
+
+## Dominio
+
+El conocimiento del negocio (generaciones, tipos y su efectividad) está en `CONTEXT.md`. Léelo antes de tocar cualquier cosa que tenga que ver con los tipos.
