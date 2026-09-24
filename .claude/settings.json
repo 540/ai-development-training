@@ -1,4 +1,36 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(pnpm:*)",
+      "Bash(node .claude/scripts/preflight.mjs:*)",
+      "Bash(node .claude/skills/review-pr/scripts/gates.mjs:*)",
+      "Bash(sh .claude/skills/open-pr/scripts/publish-screenshots.sh:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git branch:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(git rev-list:*)",
+      "Bash(git merge-base:*)",
+      "Bash(git ls-files:*)",
+      "Bash(git fetch:*)",
+      "Bash(git checkout:*)",
+      "Bash(git stash push:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(gh auth status:*)",
+      "Bash(gh pr:*)",
+      "Bash(gh repo view:*)"
+    ],
+    "deny": [
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git commit --amend:*)",
+      "Bash(git reset --hard:*)"
+    ]
+  },
   "hooks": {
     "PostToolUse": [
       {

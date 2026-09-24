@@ -8,7 +8,7 @@ const VIEWS_DO_NOT_CALL_THE_API = 'Views do not call the API: data comes from po
 
 export default [
   {
-    ignores: ['dist/', 'coverage/', 'reports/'],
+    ignores: ['dist/', 'coverage/', 'reports/', '.claude/workflows/'],
   },
   {
     files: ['src/**/*.{ts,tsx}', 'tools/**/*.ts'],

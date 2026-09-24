@@ -1,4 +1,10 @@
 #!/usr/bin/env sh
 set -e
 
+# The pr-assets branch only holds PR screenshots: no code to verify.
+code_refs=$(grep -v ' refs/heads/pr-assets ' || true)
+if [ -z "$code_refs" ]; then
+  exit 0
+fi
+
 pnpm verify

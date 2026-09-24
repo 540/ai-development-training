@@ -13,3 +13,8 @@ dist/
 reports/
 .stryker-tmp/
 
+
+# Workflow y verificación en navegador
+.claude/tmp/
+test-results/
+playwright-report/

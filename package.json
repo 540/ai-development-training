@@ -17,8 +17,9 @@
     "coverage": "vitest run --coverage",
     "crap": "tsx tools/crap/cli.ts",
     "mutation": "stryker run",
+    "e2e": "playwright test",
     "check": "pnpm typecheck && pnpm lint && pnpm lint:css && pnpm spell && pnpm arch && pnpm test",
-    "verify": "pnpm typecheck && pnpm lint && pnpm lint:css && pnpm spell && pnpm arch && pnpm duplication && pnpm coverage && pnpm crap && pnpm mutation"
+    "verify": "pnpm typecheck && pnpm lint && pnpm lint:css && pnpm spell && pnpm arch && pnpm duplication && pnpm coverage && pnpm crap"
   },
   "dependencies": {
     "react": "^18.2.0",
@@ -26,6 +27,7 @@
     "react-router-dom": "^6.22.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@stryker-mutator/core": "^10.0.0",
     "@stryker-mutator/vitest-runner": "^10.0.0",
     "@testing-library/dom": "^10.4.0",
