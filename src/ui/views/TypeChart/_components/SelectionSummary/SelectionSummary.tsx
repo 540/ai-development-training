@@ -7,6 +7,7 @@ import {
 import { getEffectiveness } from '@/core/Pokemon/domain/TypeEffectiveness'
 
 import { PokemonType } from '@/ui/components/PokemonType'
+import effectiveness from '../../_utils/effectiveness.module.css'
 import { effectivenessClass, formatMultiplier } from '../../_utils/formatMultiplier'
 import classes from './SelectionSummary.module.css'
 
@@ -35,7 +36,7 @@ export const SelectionSummary: FC<Props> = ({ selected }) => {
             <li key={attacker} className={classes.item} aria-label={attacker}>
               <PokemonType type={attacker} />
               <span
-                className={`${classes.multiplier} ${classes[effectivenessClass(value)]}`}
+                className={`${classes.multiplier} ${effectiveness[effectivenessClass(value)]}`}
               >
                 {formatMultiplier(value)}
               </span>

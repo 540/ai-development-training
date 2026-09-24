@@ -10,6 +10,7 @@ import {
 } from '@/core/Pokemon/domain/TypeEffectiveness'
 
 import { PokemonType } from '@/ui/components/PokemonType'
+import effectiveness from '../../_utils/effectiveness.module.css'
 import { effectivenessClass, formatMultiplier } from '../../_utils/formatMultiplier'
 import classes from './EffectivenessTable.module.css'
 
@@ -62,7 +63,7 @@ export const EffectivenessTable: FC<Props> = ({ selected, onToggle }) => {
                 const value = getEffectiveness(attacker, [defender])
                 const cellClasses = [
                   classes.cell,
-                  classes[effectivenessClass(value)],
+                  effectiveness[effectivenessClass(value)],
                   selected.includes(defender) ? classes.selected : '',
                 ].join(' ')
                 return (

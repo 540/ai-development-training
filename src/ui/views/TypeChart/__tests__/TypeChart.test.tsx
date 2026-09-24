@@ -47,6 +47,20 @@ describe('the type chart', () => {
     expect(cell.textContent).toBe(text)
   })
 
+  it('gives each effectiveness level its own cell class', () => {
+    render(<TypeChart />)
+
+    const cls = (label: string) => screen.getByLabelText(label).className
+    const superEffective = cls('fire vs grass: ×2')
+    const notVeryEffective = cls('water vs grass: ×0.5')
+    const noEffect = cls('normal vs ghost: ×0')
+    const neutral = cls('fire vs normal: ×1')
+    expect(
+      new Set([superEffective, notVeryEffective, noEffect, neutral]).size
+    ).toBe(4)
+    expect(cls('dragon vs fairy: ×0')).toBe(noEffect)
+  })
+
   it('selects and deselects a defending type', () => {
     render(<TypeChart />)
 

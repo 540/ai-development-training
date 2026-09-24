@@ -54,21 +54,6 @@
   background-color: var(--color-selected);
 }
 
-.superEffective {
-  background-color: var(--color-effectiveness-super);
-  color: var(--color-white);
-}
-
-.notVeryEffective {
-  background-color: var(--color-effectiveness-weak);
-  color: var(--color-black);
-}
-
-.noEffect {
-  background-color: var(--color-effectiveness-none);
-  color: var(--color-white);
-}
-
-.neutral {
-  color: var(--color-black);
+.cell.selected {
+  box-shadow: inset 0 0 0 2px var(--color-primary);
 }
