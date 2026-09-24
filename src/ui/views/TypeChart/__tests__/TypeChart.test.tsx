@@ -61,6 +61,20 @@ describe('the type chart', () => {
     expect(cls('dragon vs fairy: ×0')).toBe(noEffect)
   })
 
+  it('keeps the effectiveness color of the cells in a selected column', () => {
+    render(<TypeChart />)
+
+    pressDefender('grass')
+
+    const superEffective = screen.getByLabelText('fire vs grass: ×2')
+    expect(superEffective.className).toMatch(/superEffective/)
+    expect(superEffective.className).not.toMatch(/selectedNeutral/)
+    const neutral = screen.getByLabelText('normal vs grass: ×1')
+    expect(neutral.className).toMatch(/selectedNeutral/)
+    const unselected = screen.getByLabelText('fire vs normal: ×1')
+    expect(unselected.className).not.toMatch(/selectedNeutral/)
+  })
+
   it('selects and deselects a defending type', () => {
     render(<TypeChart />)
 

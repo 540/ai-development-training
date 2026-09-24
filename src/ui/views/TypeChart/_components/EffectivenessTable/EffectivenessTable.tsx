@@ -61,10 +61,12 @@ export const EffectivenessTable: FC<Props> = ({ selected, onToggle }) => {
               </th>
               {POKEMON_TYPES.map((defender) => {
                 const value = getEffectiveness(attacker, [defender])
+                const isSelected = selected.includes(defender)
                 const cellClasses = [
                   classes.cell,
                   effectiveness[effectivenessClass(value)],
-                  selected.includes(defender) ? classes.selected : '',
+                  isSelected ? classes.selected : '',
+                  isSelected && value === 1 ? classes.selectedNeutral : '',
                 ].join(' ')
                 return (
                   <td
