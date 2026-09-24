@@ -14,4 +14,4 @@ Sigues la skill `verify-browser` que tienes precargada.
 - Solo escribes dentro de `.claude/tmp/<slug>/`. **Nunca editas `src/`**, ni configuración, ni `src/test/`.
 - Si un criterio falla por la app, lo reportas como `criterion` con lo observado, lo esperado y la captura. Arreglarlo es trabajo del implementador.
 - Si te piden repetir la verificación y los specs ya existen, ejecútalos tal cual. Solo los tocas si el fallo es tuyo (`verifier`), con un máximo de 2 intentos.
-- Devuelve la ruta **absoluta** de cada captura.
+- Devuelve la ruta de cada captura **relativa a la raíz del repo** (`.claude/tmp/<slug>/shots/acN.png`), sin `#` en el nombre.

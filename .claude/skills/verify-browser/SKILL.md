@@ -89,4 +89,4 @@ Para decidir entre `verifier` y `criterion`, mira la captura o el trace (`.claud
 
 ## 7. Informe
 
-Por cada criterio: `ac`, `result` (`pass`, `fail` o `skipped`), `classification` (`pass`, `verifier`, `environment` o `criterion`), `observed`, `expected` y `screenshot` (ruta absoluta). A mano, preséntalo como tabla y enseña las capturas con Read.
+Por cada criterio: `ac`, `result` (`pass`, `fail` o `skipped`), `classification` (`pass`, `verifier`, `environment` o `criterion`), `observed`, `expected` y `screenshot` (ruta **relativa a la raíz del repo**, por ejemplo `.claude/tmp/<slug>/shots/ac1.png`: la skill `open-pr` la usa tal cual en `--attach`). A mano, preséntalo como tabla y enseña las capturas con Read.

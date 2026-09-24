@@ -4,7 +4,6 @@
       "Bash(pnpm:*)",
       "Bash(node .claude/scripts/preflight.mjs:*)",
       "Bash(node .claude/skills/review-pr/scripts/gates.mjs:*)",
-      "Bash(sh .claude/skills/open-pr/scripts/publish-screenshots.sh:*)",
       "Bash(git status:*)",
       "Bash(git diff:*)",
       "Bash(git log:*)",

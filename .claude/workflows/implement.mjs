@@ -207,7 +207,7 @@ const VERIFY_SCHEMA = {
           classification: { type: 'string', enum: ['pass', 'verifier', 'environment', 'criterion', 'skipped'] },
           observed: { type: 'string' },
           expected: { type: 'string' },
-          screenshot: { type: 'string', description: 'Ruta absoluta de la captura; cadena vacía si no hay' },
+          screenshot: { type: 'string', description: 'Ruta de la captura RELATIVA a la raíz del repo (.claude/tmp/<slug>/shots/acN.png); cadena vacía si no hay' },
         },
       },
     },
@@ -512,7 +512,7 @@ function verifyPrompt(round) {
       : 'Escribe un test por criterio siguiendo la skill verify-browser, ejecútalo con `pnpm e2e ' + WORK_DIR + '` y clasifica cada fallo.',
     'Plan: ' + PLAN_FILE,
     'Criterios de aceptación: ' + JSON.stringify(CRITERIA, null, 2),
-    'Devuelve una entrada por criterio, con la ruta ABSOLUTA de su captura.',
+    'Devuelve una entrada por criterio, con la ruta de su captura RELATIVA a la raíz del repo.',
   ].join('\n')
 }
 
@@ -695,7 +695,7 @@ if (SKIP_PR) {
       'TAREA — ABRIR LA PR en borrador contra ' + BASE + ' desde ' + BRANCH + '. Sigue la skill commit (si queda algo sin commitear) y después la skill open-pr.',
       'Título: "' + (analysis.title || SLUG) + '". Plan (para "Qué cambia"): ' + PLAN_FILE + '. Escribe el cuerpo en ' + WORK_DIR + '/pr-body.md.',
       'Criterios de aceptación: ' + JSON.stringify(CRITERIA),
-      'Capturas a publicar (ruta y criterio): ' + (screenshots.length ? JSON.stringify(screenshots) : 'ninguna: dilo en Verificación'),
+      'Capturas (ruta y criterio): ' + (screenshots.length ? JSON.stringify(screenshots) + '. Refiérelas en el cuerpo como ![ACn](<ruta>) y adjúntalas en el mismo gh pr create con --attach \'<ruta>#<criterio>\', usando EXACTAMENTE la misma ruta en los dos sitios (así gh reescribe la referencia con la URL del adjunto).' : 'ninguna: dilo en Verificación'),
       'Estado para las secciones Verificación y Salvedades (tal cual, sin adornarlo):',
       caveatsInput,
     ].join('\n'),

@@ -59,7 +59,7 @@ pnpm duplication pnpm coverage   pnpm crap       pnpm mutation
 | Implement | `task-implementer` | Código y tests hasta `pnpm check` en verde, y commit de checkpoint |
 | Review | `gates.mjs` ‖ `reviewer` → triaje | Gates deterministas y Merge Safety ponderada; bucle de hasta 3 rondas |
 | Verify | `browser-verifier` | Un spec de Playwright desechable por criterio, con PokéAPI mockeada y una captura cada uno |
-| PR | `pr-creator` | Push y PR en borrador con salvedades y capturas |
+| PR | `pr-creator` | Push y PR en borrador con salvedades y capturas, adjuntas con `gh pr create --attach` (gh ≥ 2.99) |
 
 Se lanza desde Claude Code pidiéndole que ejecute el workflow `implement` con `{ task: "…" }` o `{ specFile: "specs/x.md" }`. Opciones: `maxRounds`, `minScore`, `skipBrowser`, `skipPr`, `baseBranch`, `model` y `effort`.
 

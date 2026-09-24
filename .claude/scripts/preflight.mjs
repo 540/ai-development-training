@@ -48,6 +48,11 @@ check('push-access', push.ok, push.output, 'cannot push to origin: ' + push.outp
 if (!SKIP_BROWSER) {
   const browser = sh('pnpm exec playwright install chromium')
   check('playwright-chromium', browser.ok, browser.output, 'cannot install the Playwright Chromium: ' + browser.output)
+
+  // Screenshots are uploaded as GitHub attachments with `gh pr create --attach` (gh >= 2.99).
+  const attach = sh('gh pr create --help')
+  const version = sh('gh --version').output.split('\n')[0]
+  check('gh-attach', attach.output.includes('--attach'), version, version + ' has no `gh pr create --attach` (needs gh >= 2.99): update gh or run with skipBrowser')
 }
 
 const baseline = sh('pnpm check')
