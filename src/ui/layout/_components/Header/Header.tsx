@@ -23,6 +23,7 @@ export const Header: FC = () => (
         </Link>
         <ul className={classes.itemList}>
           <Item path="home">Home</Item>
+          <Item path="types">Types</Item>
         </ul>
       </div>
     </MainContainer>

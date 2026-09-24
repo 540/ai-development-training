@@ -1,0 +1,18 @@
+.superEffective {
+  background-color: var(--color-effectiveness-super);
+  color: var(--color-white);
+}
+
+.notVeryEffective {
+  background-color: var(--color-effectiveness-weak);
+  color: var(--color-black);
+}
+
+.noEffect {
+  background-color: var(--color-effectiveness-none);
+  color: var(--color-white);
+}
+
+.neutral {
+  color: var(--color-black);
+}
