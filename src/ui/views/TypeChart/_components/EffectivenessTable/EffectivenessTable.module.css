@@ -1,0 +1,74 @@
+.container {
+  overflow-x: auto;
+}
+
+.table {
+  border-collapse: collapse;
+
+  font-size: 12px;
+}
+
+.corner {
+  padding: 4px;
+
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.defenderButton {
+  display: flex;
+  justify-content: center;
+
+  border: none;
+  background: none;
+  padding: 4px;
+
+  cursor: pointer;
+}
+
+.defenderButton[aria-pressed='true'] {
+  outline: 2px solid var(--color-primary);
+  border-radius: 100px;
+}
+
+.defenderButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.attacker {
+  padding: 2px 4px;
+}
+
+.cell {
+  border: 1px solid var(--color-neutral-200);
+  min-width: 36px;
+  height: 28px;
+
+  text-align: center;
+  font-weight: 700;
+}
+
+.selected {
+  background-color: var(--color-selected);
+}
+
+.superEffective {
+  background-color: var(--color-effectiveness-super);
+  color: var(--color-white);
+}
+
+.notVeryEffective {
+  background-color: var(--color-effectiveness-weak);
+  color: var(--color-black);
+}
+
+.noEffect {
+  background-color: var(--color-effectiveness-none);
+  color: var(--color-white);
+}
+
+.neutral {
+  color: var(--color-black);
+}

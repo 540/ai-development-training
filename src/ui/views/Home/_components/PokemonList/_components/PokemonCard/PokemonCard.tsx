@@ -6,7 +6,7 @@ import { CSSProperties, FC } from 'react'
 import { Pokemon } from '@/core/Pokemon/domain/Pokemon'
 import { COLORS } from '@/ui/styles/utils/colors'
 
-import { PokemonType } from './_components/PokemonType'
+import { PokemonType } from '@/ui/components/PokemonType'
 import { Link } from '@/ui/components/Link'
 import { PokemonStats } from './_components/PokemonStats/PokemonStats'
 import classes from './PokemonCard.module.css'

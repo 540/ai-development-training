@@ -14,6 +14,11 @@
   --color-shadow-image: rgba(0, 0, 0, 0.3);
   --color-glass: rgba(255, 255, 255, 0.1);
 
+  --color-effectiveness-super: #2e9e4f;
+  --color-effectiveness-weak: #f0a35e;
+  --color-effectiveness-none: #3a3a3a;
+  --color-selected: #fde8eb;
+
   --color-bug: #a7b723;
   --color-dark: #75574c;
   --color-dragon: #7037ff;
