@@ -64,28 +64,6 @@ Cada hallazgo lleva `dimension`, `severity`, `file`, `line`, `title`, `detail` (
 
 ## 4. Informe
 
-```
-## Revisión — <rama o PR> contra <base>
-
-**Merge Safety: X.X / 10** — <recomendación en una línea>
-Gates: check ✅ · duplicación ✅ · cobertura ✅ · CRAP ✅ · mutación ✅ (o ⏭ sin ficheros)
-
-| Dimensión | Nota |
-|---|---|
-| Corrección | x |
-| Arquitectura | x |
-| Dominio | x |
-| Tests | x |
-| UI y estilos | x |
-
-### Critical
-- `file:line` — título. Detalle. **Arreglo:** …
-
-### Improvement
-…
-
-### Cleanup
-…
-```
+Lee `.claude/skills/review-pr/assets/report-template.md` y rellénalo sin cambiar su estructura. Si una sección de severidad queda vacía, déjala con «Nada».
 
 En modo PR, al final pregunta si quieren publicar el informe como comentario (`gh pr comment <pr> --body-file <fichero>`). **Nunca publiques sin confirmación**, y en modo workflow no publiques nunca.
