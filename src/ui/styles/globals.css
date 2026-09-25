@@ -32,6 +32,11 @@
   --color-rock: #b69e31;
   --color-steel: #b7b9d0;
   --color-water: #6493eb;
+
+  --color-effectiveness-super: #2e9e4f;
+  --color-effectiveness-weak: #d9822b;
+  --color-effectiveness-none: #3a3a3a;
+  --color-effectiveness-selected: #ffcc33;
 }
 
 * {

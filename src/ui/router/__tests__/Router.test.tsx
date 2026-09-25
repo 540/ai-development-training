@@ -28,4 +28,11 @@ describe('the app', () => {
     expect(await screen.findByText('Base Stats')).toBeInTheDocument()
     expect(screen.getByText('025', { exact: false })).toBeInTheDocument()
   })
+
+  it('opens the type chart from its own address', async () => {
+    await renderAppAt('/types')
+
+    expect(await screen.findByRole('heading', { name: 'Type Chart' })).toBeInTheDocument()
+    expect(screen.queryByText('Base Stats')).not.toBeInTheDocument()
+  })
 })
