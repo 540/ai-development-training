@@ -18,7 +18,7 @@ export const EffectivenessTable: FC<Props> = ({ selected, onToggle }) => {
 
   return (
     <div className={classes.container}>
-      <table className={classes.table}>
+      <table className={classes.table} aria-label="Type effectiveness chart">
         <thead>
           <tr>
             <th scope="col" className={classes.corner}>

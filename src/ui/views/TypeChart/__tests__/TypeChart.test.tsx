@@ -20,6 +20,7 @@ describe('the type chart', () => {
 
   it('shows every attacking type against every defending type', () => {
     expect(screen.getByRole('heading', { name: 'Type Chart' })).toBeInTheDocument()
+    expect(screen.getByRole('table', { name: 'Type effectiveness chart' })).toBeInTheDocument()
     expect(screen.getAllByRole('rowheader')).toHaveLength(18)
     expect(screen.getAllByRole('button')).toHaveLength(18)
     expect(screen.getAllByRole('cell')).toHaveLength(18 * 18)
@@ -37,13 +38,20 @@ describe('the type chart', () => {
   })
 
   it('selects and deselects a defending type', () => {
+    const fireVsGrass = () => screen.getByLabelText('fire vs grass: ×2').className
+
     expect(defender('grass')).toHaveAttribute('aria-pressed', 'false')
+    expect(fireVsGrass()).not.toMatch(/selected/)
 
     toggle('grass')
     expect(defender('grass')).toHaveAttribute('aria-pressed', 'true')
+    expect(fireVsGrass()).toMatch(/selected/)
+    expect(defender('grass').closest('th')?.className).toMatch(/selected/)
+    expect(screen.getByLabelText('fire vs water: ×2').className).not.toMatch(/selected/)
 
     toggle('grass')
     expect(defender('grass')).toHaveAttribute('aria-pressed', 'false')
+    expect(fireVsGrass()).not.toMatch(/selected/)
   })
 
   it('allows at most two defending types', () => {

@@ -35,5 +35,4 @@ describe('the app', () => {
     expect(await screen.findByRole('heading', { name: 'Type Chart' })).toBeInTheDocument()
     expect(screen.queryByText('Base Stats')).not.toBeInTheDocument()
   })
-
 })
