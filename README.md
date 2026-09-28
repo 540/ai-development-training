@@ -1,4 +1,4 @@
-# Car Compare
+# Comparador de coches
 
 Comparador de coches sobre la API de [fueleconomy.gov](https://www.fueleconomy.gov/feg/ws/) (EPA): listado por año y marca con buscador y filtros, ficha de cada versión y comparación lado a lado de hasta tres coches.
 
