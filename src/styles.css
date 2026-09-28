@@ -166,9 +166,29 @@ a {
 }
 
 .card-cargando {
-  height: 300px;
-  background-color: #e0e0e0;
-  border-top-color: #e0e0e0;
+  border-top-color: #e2e8f0;
+}
+
+.hueso {
+  border-radius: 4px;
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  animation: brillo 1.4s ease-in-out infinite;
+}
+
+@keyframes brillo {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hueso {
+    animation: none;
+  }
 }
 
 .card-top {

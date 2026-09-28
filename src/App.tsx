@@ -322,7 +322,7 @@ function Home(props: any) {
       )}
       <div className="lista">
         {lista == null ? (
-          [0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => <div key={i} className="card card-cargando"></div>)
+          [0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => <Esqueleto key={i} />)
         ) : lista.length == 0 ? (
           <h2>No vehicles found</h2>
         ) : (
@@ -384,6 +384,35 @@ function Home(props: any) {
   )
 }
 
+// la tarjeta de mentira mientras llega la api (mismas medidas que la de verdad)
+function Esqueleto(props: any) {
+  return (
+    <div className="card card-cargando" style={props.centrado ? { margin: '0 auto' } : {}}>
+      <div>
+        <div className="card-top">
+          <div className="hueso" style={{ width: '65%', height: 20 }} />
+          <div className="hueso" style={{ width: 32, height: 12 }} />
+        </div>
+        <div className="hueso" style={{ width: '50%', height: 12, marginTop: 8 }} />
+        <div className="card-chips">
+          <div className="hueso" style={{ width: 70, height: 20, borderRadius: 100 }} />
+          <div className="hueso" style={{ width: 150, height: 20, borderRadius: 100 }} />
+        </div>
+        <div className="hueso" style={{ width: '45%', height: 40, margin: '20px 0 16px' }} />
+        <div className="card-datos">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="dato">
+              <div className="hueso" style={{ width: 32, height: 14, margin: '0 auto 6px' }} />
+              <div className="hueso" style={{ width: 40, height: 10, margin: '0 auto' }} />
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="hueso" style={{ height: 34, borderRadius: 6 }} />
+    </div>
+  )
+}
+
 function Detalle(props: any) {
   const [c, setC] = useState<any>(null)
   const [error, setError] = useState(false)
@@ -415,7 +444,7 @@ function Detalle(props: any) {
   if (!c) {
     return (
       <div className="main">
-        <div className="card card-cargando" style={{ margin: '0 auto' }}></div>
+        <Esqueleto centrado />
       </div>
     )
   }
@@ -563,7 +592,7 @@ function Comparar(props: any) {
   if (!coches) {
     return (
       <div className="main">
-        <div className="card card-cargando" style={{ margin: '0 auto' }}></div>
+        <Esqueleto centrado />
       </div>
     )
   }
