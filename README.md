@@ -1,8 +1,6 @@
-# Pokédex
+# Car Compare
 
-Pokédex sobre PokéAPI: listado por generación con buscador y filtros, y ficha de cada Pokémon.
-
-Adaptada de [pokedex-taller-scpna](https://github.com/Endikaorve/pokedex-taller-scpna), de Endika Orve, con su permiso.
+Comparador de coches sobre la API de [fueleconomy.gov](https://www.fueleconomy.gov/feg/ws/) (EPA): listado por año y marca con buscador y filtros, ficha de cada versión y comparación lado a lado de hasta tres coches.
 
 ## Arrancar
 
@@ -15,4 +13,4 @@ pnpm dev
 
 Lanza este prompt a tu agente:
 
-> Añade al proyecto web una tabla interactiva con las ventajas y desventajas entre todos los tipos de Pokémon.
+> Añade al comparador el coste total de propiedad a 5 años de cada coche para un conductor en España, con su etiqueta ambiental de la DGT.
