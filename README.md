@@ -13,4 +13,4 @@ pnpm dev
 
 Lanza este prompt a tu agente:
 
-> Añade al comparador cuánto cuesta tener cada coche durante 5 años en España, sumando el precio, los impuestos y lo que se gasta en combustible o electricidad, y muestra su etiqueta ambiental de la DGT.
+> Añade a cada coche su etiqueta ambiental de la DGT y un filtro para ver solo los de una etiqueta.

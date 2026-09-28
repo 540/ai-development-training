@@ -155,6 +155,9 @@ function aLista(x: any) {
   return [x.menuItem]
 }
 
+// hace la peticion a la api
+// IMPORTANTE: hay que mandar el Accept que si no devuelve XML!!
+// (se podria usar axios pero no merece la pena)
 function pedir(url: string) {
   return fetch(API + url, { headers: { Accept: 'application/json' } }).then((r) => {
     if (!r.ok) throw new Error('fallo ' + r.status)
@@ -264,7 +267,9 @@ export default function App() {
       nuevo = [...comparar, id]
     }
     setComparar(nuevo)
+    // lo guardamos para que no se pierda al recargar
     localStorage.setItem('comparar', JSON.stringify(nuevo))
+    // console.log('comparar', nuevo)
   }
 
   let pagina: any = null
@@ -304,7 +309,9 @@ export default function App() {
 }
 
 function Home(props: any) {
-  const [year, setYear] = useState('2024')
+  // estado del listado
+  const [year, setYear] = useState('2024') // el año
+  // const [year, setYear] = useState(new Date().getFullYear()) // no funciona con la api, devuelve vacio
   const [marca, setMarca] = useState('Toyota')
   const [texto, setTexto] = useState('')
   const [fuel, setFuel] = useState('all')
@@ -347,6 +354,7 @@ function Home(props: any) {
           })
           .then((arr: any) => {
             console.log('coches cargados', arr.length)
+            // arr.sort((a: any, b: any) => a.comb - b.comb) // ordenar por consumo, lo quito que tarda
             setCoches(arr)
           })
           .catch(() => setError(true))
@@ -397,8 +405,9 @@ function Home(props: any) {
     )
   }
 
+  // la api solo tiene coches desde 2015
   const years: any = []
-  for (let y = 2026; y >= 2015; y--) years.push('' + y)
+  for (let y = 2026; y >= 1995; y--) years.push('' + y)
 
   return (
     <div className="main">
@@ -586,6 +595,7 @@ function Detalle(props: any) {
     )
   }
 
+  // el color de la ficha es el del combustible
   const color = colores[c.fuel]
   const elegido = props.comparar.includes(c.id)
   const borde = '2px solid color-mix(in srgb, ' + color + ', #ffffff 70%)'
