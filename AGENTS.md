@@ -9,4 +9,3 @@ Comparador de coches sobre la API de fueleconomy.gov en React y TypeScript: list
 - Las vistas no llaman a la API: los datos se piden a `vehicleService`, y si hace falta algo nuevo se añade al repositorio y al servicio. El dominio no depende de otras capas.
 - Nada de `any`.
 - Nada de colores en crudo: se usan las variables de `src/ui/styles/globals.css`, y si hace falta uno nuevo se añade allí.
-- Antes de dar una tarea por terminada, `pnpm verify` tiene que pasar.

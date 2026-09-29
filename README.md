@@ -33,7 +33,7 @@ pnpm typecheck   pnpm lint   pnpm lint:css   pnpm spell   pnpm arch   pnpm test
 
 ## Práctica
 
-Los guardarraíles existen, pero nadie los ejecuta solos: solo corren si alguien lanza `pnpm verify`. La práctica es decidir cuándo tienen que correr mientras el agente desarrolla y montarlo en tu herramienta (Claude Code, Cursor, Codex, Copilot…) para que el agente se corrija solo sin que tengas que pedírselo.
+Los guardarraíles existen, pero nadie los ejecuta solos: solo corren si alguien lanza `pnpm verify`. La práctica es pensar dónde se puede forzar que se ejecute `pnpm verify` sin que nadie lo pida, y montarlo.
 
 Para probarlo, lanza este prompt a tu agente:
 
