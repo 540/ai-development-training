@@ -1,0 +1,5 @@
+{
+  "guardrails": {
+    "Stop": [{ "type": "command", "command": "node tools/agentGuardrails.mjs stop antigravity", "timeout": 300 }]
+  }
+}

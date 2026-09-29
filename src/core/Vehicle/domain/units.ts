@@ -21,6 +21,6 @@ export const kwhPer100Km = (kwhPer100Miles: number): number | null =>
 export const milesToKilometers = (miles: number): number | null =>
   miles > 0 ? Math.round(miles * KILOMETERS_PER_MILE) : null
 
-/** Grams per mile to grams per kilometer, rounded to the unit */
+/** Grams per mile to grams per kilometer, rounded to the unit; 0 when the source has no figure (it sends -1) */
 export const gramsPerMileToGramsPerKilometer = (gramsPerMile: number): number =>
-  gramsPerMile > 0 ? Math.round(gramsPerMile / KILOMETERS_PER_MILE) : 0
+  Math.max(0, Math.round(gramsPerMile / KILOMETERS_PER_MILE))

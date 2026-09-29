@@ -38,18 +38,22 @@ const specRows = (vehicle: Vehicle): [string, string][] => {
     [TEXTS.details.range, vehicle.range ? `${formatNumber(vehicle.range)} km` : EMPTY_VALUE],
   ]
 
-  if (vehicle.fuel === 'electric' || vehicle.fuel === 'plugInHybrid') {
-    rows.push([TEXTS.details.electricMotor, vehicle.electricMotor])
-  }
-  if (vehicle.fuel === 'plugInHybrid') {
-    rows.push(
-      [TEXTS.details.electricityConsumption, `${formatConsumption(vehicle.electricity?.combined)} kWh/100 km`],
-      [TEXTS.details.electricRange, vehicle.electricRange ? `${formatNumber(vehicle.electricRange)} km` : EMPTY_VALUE],
-      [TEXTS.details.utilityFactor, formatNumber(vehicle.utilityFactor)]
-    )
-  }
+  return [...rows, ...electricRows(vehicle)]
+}
 
-  return rows
+const electricRows = (vehicle: Vehicle): [string, string][] => {
+  if (vehicle.fuel === 'electric') {
+    return [[TEXTS.details.electricMotor, vehicle.electricMotor]]
+  }
+  if (vehicle.fuel !== 'plugInHybrid') {
+    return []
+  }
+  return [
+    [TEXTS.details.electricMotor, vehicle.electricMotor],
+    [TEXTS.details.electricityConsumption, `${formatConsumption(vehicle.electricity?.combined)} kWh/100 km`],
+    [TEXTS.details.electricRange, vehicle.electricRange ? `${formatNumber(vehicle.electricRange)} km` : EMPTY_VALUE],
+    [TEXTS.details.utilityFactor, formatNumber(vehicle.utilityFactor)],
+  ]
 }
 
 export const Details: FC = () => {

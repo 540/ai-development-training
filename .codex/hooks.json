@@ -1,0 +1,19 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "^apply_patch$",
+        "hooks": [
+          { "type": "command", "command": "node \"$(git rev-parse --show-toplevel)/tools/agentGuardrails.mjs\" edit codex", "timeout": 60 }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "node \"$(git rev-parse --show-toplevel)/tools/agentGuardrails.mjs\" stop codex", "timeout": 300 }
+        ]
+      }
+    ]
+  }
+}

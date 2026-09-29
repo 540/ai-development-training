@@ -1,40 +1,74 @@
-# Comparador de coches — con guardarraíles
+# Comparador de coches — con el harness montado
 
 Comparador de coches sobre la API de [fueleconomy.gov](https://www.fueleconomy.gov/feg/ws/) (EPA): listado por año y marca con buscador y filtros, ficha de cada versión y comparación lado a lado de hasta tres coches.
 
-La app es el pretexto. Esta rama trae el mismo comparador ordenado por capas y los criterios del equipo convertidos en herramientas estándar, para que se puedan comprobar sin que nadie tenga que repetírselos al agente.
+La app es el pretexto. Esta rama cierra la progresión de las prácticas: el mismo comparador, con los guardarraíles del equipo y la red de verificación completa, para responder a una pregunta concreta: ¿puedo dejar de leer el código que escribe un agente si una red lo verifica por mí?
 
-## Los guardarraíles
+## La red
 
-| guardarraíl | herramienta | qué exige |
+| gate | herramienta | umbral |
 |---|---|---|
 | tipos | TypeScript | el proyecto compila |
-| nombres | ESLint: `naming-convention` y `unicorn/filename-case` | camelCase; PascalCase para componentes y tipos; MAYÚSCULAS para constantes; ficheros en camelCase o PascalCase |
-| clases CSS | Stylelint | camelCase, sin guiones |
-| sin `any` | ESLint: `no-explicit-any` | todo tipado |
-| colores | Stylelint y ESLint | solo las variables de `src/ui/styles/globals.css` |
-| idioma | cspell | el código en inglés; los textos de pantalla, en castellano y solo en `src/ui/texts/` |
-| arquitectura | dependency-cruiser y ESLint | las vistas no llaman a la API ni importan infraestructura; el dominio no depende de nadie; sin ciclos ni huérfanos |
-| tests | Vitest y Testing Library | la suite pasa |
+| lint | ESLint | nombres en camelCase o PascalCase, sin `any`, sin colores en crudo, las vistas no llaman a la API, tests sin enfocar, desactivar ni quedarse sin aserción |
+| estilos | Stylelint | clases en camelCase y sin colores en crudo |
+| idioma | cspell | el código, en inglés; los textos de pantalla, en castellano y solo en `src/ui/texts/` |
+| arquitectura | dependency-cruiser | la dependencia apunta hacia dentro, sin ciclos ni huérfanos |
+| duplicación | jscpd | cero duplicación por encima de 50 tokens |
+| cobertura | Vitest e istanbul | 100 % en dominio, servicios y `tools`; 90 % en infraestructura; 60 % en la interfaz |
+| riesgo CRAP | script propio (`tools/crap`) | ninguna función por encima de CRAP 8 |
+| mutación | StrykerJS | 100 % de mutantes muertos en dominio y servicios |
+
+## Lo que la red no garantiza
+
+Los gates verifican el **código**, no lo que el negocio pidió: un agente puede dejarlos todos en verde implementando mal una regla. La mutación al 100 % sí protege las conversiones de unidades del dominio, pero no dice nada de un supuesto mal elegido: si el agente se inventa el precio de la gasolina, los tests que él mismo escribe lo darán por bueno.
 
 ## Cómo se ejecuta
 
 ```bash
-pnpm install
-pnpm dev       # la app
-pnpm verify    # todos los guardarraíles
+pnpm install   # instala también los hooks de git
+pnpm check     # lo rápido: tipos, lint, estilos, idioma, arquitectura y tests
+pnpm verify    # la red entera, salvo la mutación
 ```
 
-Cada uno por separado:
+Cada gate por separado:
 
 ```bash
-pnpm typecheck   pnpm lint   pnpm lint:css   pnpm spell   pnpm arch   pnpm test
+pnpm typecheck   pnpm lint       pnpm lint:css   pnpm spell   pnpm arch
+pnpm duplication pnpm coverage   pnpm crap       pnpm mutation
 ```
+
+`pnpm crap` lee el informe de `pnpm coverage`, así que necesita uno reciente.
+
+### Cuándo corren
+
+- **Mientras el agente trabaja**: después de cada edición, ESLint, Stylelint y cspell revisan ese fichero y le devuelven los errores; al terminar, `pnpm check`. Configurado para Claude Code (`.claude/`), Codex (`.codex/`), Cursor (`.cursor/`) y Copilot (`.github/hooks/`). Antigravity (`.agents/hooks.json`) solo revisa al terminar.
+- **pre-commit**: tipos, lint, estilos, idioma y los tests relacionados con lo modificado.
+- **pre-push**: `pnpm verify` (sin mutación).
+- **Revisión** (skill `review-pr` y fase Review del workflow): todo lo anterior más Stryker acotado a los ficheros de dominio y servicios que toca el diff.
+
+## Workflow de implementación
+
+`.claude/workflows/implement.mjs` lleva una tarea hasta una PR en borrador contra `harness`, con subagentes separados por fase:
+
+| Fase | Quién | Qué |
+|---|---|---|
+| Analyze | `researcher` | Plan con criterios de aceptación en `.claude/tmp/<slug>/plan.md` |
+| Plan review | agente del workflow | Quita ficheros sin consumidor y añade la opción más simple a cada supuesto |
+| Branch | agente del workflow | `feature/<slug>` desde `harness` |
+| Preflight | `.claude/scripts/preflight.mjs` | git y gh, Chromium de Playwright y `pnpm check` en verde antes de tocar nada |
+| Implement | `task-implementer` | Código y tests hasta `pnpm check` en verde, y commit de checkpoint |
+| Review | `gates.mjs` ‖ `reviewer` → triaje | Gates deterministas y Merge Safety ponderada; bucle de hasta 3 rondas |
+| Verify | `browser-verifier` | Un spec de Playwright desechable por criterio, con la API de fueleconomy.gov mockeada y una captura cada uno |
+| PR | `pr-creator` | Push y PR en borrador con salvedades y capturas, adjuntas con `gh pr create --attach` (gh ≥ 2.99) |
+
+Se lanza desde Claude Code pidiéndole que ejecute el workflow `implement` con `{ task: "…" }` o `{ specFile: "specs/x.md" }`. Opciones: `maxRounds`, `minScore`, `skipBrowser`, `skipPr`, `baseBranch`, `model` y `effort`.
+
+Cada paso existe también como skill suelta: `/review-pr [PR]`, `/verify-browser "criterios"`, `/commit` y `/open-pr`. Las skills de conocimiento, `car-domain` y `project-conventions`, las precargan los subagentes. La primera vez, `pnpm exec playwright install chromium` (el preflight lo hace solo).
+
+Las skills están en `.agents/skills/`; `.claude/skills` es un enlace a esa carpeta para Claude Code.
 
 ## Práctica
 
-Los guardarraíles existen, pero nadie los ejecuta solos: solo corren si alguien lanza `pnpm verify`. La práctica es decidir cuándo tienen que correr mientras el agente desarrolla y montarlo en tu herramienta (Claude Code, Cursor, Codex, Copilot…) para que el agente se corrija solo sin que tengas que pedírselo.
-
-Para probarlo, lanza este prompt a tu agente:
+Lanza el workflow con esta tarea:
 
 > Añade al comparador cuál de los coches sale más barato en España.

@@ -5,7 +5,8 @@
     "@cspell/dict-es-es/cspell-ext.json"
   ],
   "files": [
-    "src/**/*.{ts,tsx,css}"
+    "src/**/*.{ts,tsx,css}",
+    "tools/**/*.{ts,mjs}"
   ],
   "ignorePaths": [
     "node_modules",

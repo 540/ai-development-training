@@ -8,10 +8,10 @@ const VIEWS_DO_NOT_CALL_THE_API = 'Views do not call the API: data comes from ve
 
 export default [
   {
-    ignores: ['dist/', 'coverage/', 'reports/'],
+    ignores: ['dist/', 'coverage/', 'reports/', '.claude/workflows/'],
   },
   {
-    files: ['src/**/*.{ts,tsx}'],
+    files: ['src/**/*.{ts,tsx}', 'tools/**/*.ts'],
     languageOptions: {
       parser: tseslint.parser,
     },
@@ -58,7 +58,7 @@ export default [
     },
   },
   {
-    files: ['src/**/*.test.{ts,tsx}'],
+    files: ['src/**/*.test.{ts,tsx}', 'tools/**/*.test.ts'],
     plugins: { vitest },
     rules: {
       'vitest/expect-expect': 'error',

@@ -24,4 +24,11 @@ describe('units', () => {
     expect(milesToKilometers(0)).toBeNull()
     expect(gramsPerMileToGramsPerKilometer(0)).toBe(0)
   })
+
+  it('has no figure when the source marks it as unknown with -1', () => {
+    expect(litersPer100Km(-1)).toBeNull()
+    expect(kwhPer100Km(-1)).toBeNull()
+    expect(milesToKilometers(-1)).toBeNull()
+    expect(gramsPerMileToGramsPerKilometer(-1)).toBe(0)
+  })
 })

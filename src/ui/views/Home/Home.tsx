@@ -55,56 +55,42 @@ export const Home: FC = () => {
   )
 }
 
+const COMPARISONS: Record<ConsumptionFilter['comparison'], (liters: number, value: number) => boolean> = {
+  greater: (liters, value) => liters > value,
+  equal: (liters, value) => liters === value,
+  less: (liters, value) => liters < value,
+}
+
+const matchesText = (vehicle: Vehicle, search: string): boolean => {
+  const text = search.toLowerCase()
+
+  return vehicle.model.toLowerCase().includes(text) || vehicleClassLabel(vehicle.vehicleClass).toLowerCase().includes(text)
+}
+
+const matchesFuel = (vehicle: Vehicle, fuel: FuelFilter): boolean => fuel === 'all' || vehicle.fuel === fuel
+
+// With a search typed, "less" keeps the vehicles above the value: that is how the filter has always behaved
+const matchesConsumption = (vehicle: Vehicle, filter: ConsumptionFilter, isSearching: boolean): boolean => {
+  if (filter.value === null) {
+    return true
+  }
+  const comparison = filter.comparison === 'less' && isSearching ? 'greater' : filter.comparison
+  // Electric vehicles count as 0 liters
+  return COMPARISONS[comparison](vehicle.liters?.combined ?? 0, filter.value)
+}
+
 const filterVehicles = (
   vehicles: Vehicle[] | undefined,
   search: string,
   fuel: FuelFilter,
   consumptionFilter: ConsumptionFilter
 ): Vehicle[] | undefined => {
-  if (!vehicles) {
-    return vehicles
-  }
+  const isSearching = search.trim().length > 0
 
-  return vehicles.filter((vehicle) => {
-    const s = search.toLowerCase()
-    let result = true
-    // Electric vehicles count as 0 liters
-    const liters = vehicle.liters?.combined ?? 0
-    let textOk = search.trim().length === 0
-    const val = consumptionFilter.value
-    let consumptionOk = true
-    const comp = consumptionFilter.comparison
-
-    if (!textOk) {
-      textOk =
-        vehicle.model.toLowerCase().includes(s) || vehicleClassLabel(vehicle.vehicleClass).toLowerCase().includes(s)
-    }
-
-    if (fuel !== 'all' && vehicle.fuel !== fuel) {
-      result = false
-    }
-
-    if (val === null) {
-      consumptionOk = true
-    } else if (comp === 'greater') {
-      consumptionOk = liters > val
-    } else if (comp === 'equal') {
-      consumptionOk = liters === val
-    } else if (comp === 'less') {
-      if (textOk && search.trim().length > 0) {
-        consumptionOk = liters > val
-      } else {
-        consumptionOk = liters < val
-      }
-    }
-
-    if (!textOk) {
-      result = false
-    }
-    if (!consumptionOk) {
-      result = false
-    }
-
-    return result
-  })
+  return vehicles?.filter(
+    (vehicle) =>
+      (!isSearching || matchesText(vehicle, search)) &&
+      matchesFuel(vehicle, fuel) &&
+      matchesConsumption(vehicle, consumptionFilter, isSearching)
+  )
 }
