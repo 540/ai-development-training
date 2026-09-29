@@ -21,7 +21,7 @@ La misma petición de la rama `base`, ahora en tres fases: investigar, planifica
 
    Al final pregunta si lo guarda en `research.md`.
 
-2. **Plan**: en una conversación nueva, resuelve contigo cada pregunta abierta y reparte el trabajo en fases con su verificación.
+2. **Plan**: en una conversación nueva, decide cada pregunta abierta, deja escrito el porqué y reparte el trabajo en fases con su verificación.
 
    ```
    /rpi-plan @research.md
