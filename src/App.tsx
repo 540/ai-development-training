@@ -316,7 +316,7 @@ function Home(props: any) {
   const [texto, setTexto] = useState('')
   const [fuel, setFuel] = useState('all')
   const [comp, setComp] = useState('greater')
-  const [valor, setValor] = useState<any>(0)
+  const [valor, setValor] = useState<any>('') // vacio = sin filtro
   const [coches, setCoches] = useState<any>(null)
   const [error, setError] = useState(false)
 
@@ -379,7 +379,9 @@ function Home(props: any) {
       if (fuel != 'all' && c.fuel != fuel) ok = false
       // los electricos cuentan como 0 litros
       let l = c.litros || 0
-      if (comp == 'greater') {
+      if (v === '') {
+        okMpg = true
+      } else if (comp == 'greater') {
         okMpg = l > v
       } else if (comp == 'equal') {
         okMpg = l == v
@@ -455,8 +457,9 @@ function Home(props: any) {
             value={valor}
             placeholder="Valor"
             onChange={(e) => {
+              if (e.target.value.trim() == '') return setValor('')
               const n = Number(e.target.value.replace(',', '.'))
-              setValor(isNaN(n) ? 0 : n)
+              setValor(isNaN(n) ? '' : n)
             }}
           />
         </div>
