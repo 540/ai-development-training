@@ -13,4 +13,4 @@ pnpm dev
 
 Lanza este prompt a tu agente:
 
-> Añade a cada coche su etiqueta ambiental de la DGT y un filtro para ver solo los de una etiqueta.
+> Añade al comparador cuál de los coches sale más barato en España.
