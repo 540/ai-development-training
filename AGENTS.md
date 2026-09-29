@@ -2,6 +2,10 @@
 
 Comparador de coches sobre la API de fueleconomy.gov en React y TypeScript: listado por año y marca con buscador y filtros, ficha de cada versión y comparación de hasta tres coches.
 
+## Dominio
+
+Lo que hay que saber de la API y del negocio (unidades, combustibles y lo que la API no da) está en `CONTEXT.md`. Léelo antes de tocar cualquier cosa que use consumos, emisiones, costes o datos de la API.
+
 ## Reglas del proyecto
 
 - Nombres: camelCase para variables y funciones, PascalCase para componentes y tipos, MAYÚSCULAS para constantes. Ficheros en camelCase o PascalCase, y clases CSS en camelCase.

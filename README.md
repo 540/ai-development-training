@@ -1,8 +1,8 @@
-# Comparador de coches — con guardarraíles
+# Comparador de coches — especificación
 
 Comparador de coches sobre la API de [fueleconomy.gov](https://www.fueleconomy.gov/feg/ws/) (EPA): listado por año y marca con buscador y filtros, ficha de cada versión y comparación lado a lado de hasta tres coches.
 
-La app es el pretexto. Esta rama trae el mismo comparador ordenado por capas y los criterios del equipo convertidos en herramientas estándar, para que se puedan comprobar sin que nadie tenga que repetírselos al agente.
+La app es el pretexto. Esta rama trae el mismo comparador ordenado por capas, los criterios del equipo convertidos en herramientas estándar y el conocimiento de la API y del negocio en `CONTEXT.md`.
 
 ## Los guardarraíles
 
@@ -33,8 +33,14 @@ pnpm typecheck   pnpm lint   pnpm lint:css   pnpm spell   pnpm arch   pnpm test
 
 ## Práctica
 
-Los guardarraíles existen, pero nadie los ejecuta solos: solo corren si alguien lanza `pnpm verify`. La práctica es decidir cuándo tienen que correr mientras el agente desarrolla y montarlo en tu herramienta (Claude Code, Cursor, Codex, Copilot…) para que el agente se corrija solo sin que tengas que pedírselo.
+Esta vez no se implementa: se especifica. Antes de empezar, instala las skills de interrogatorio:
 
-Para probarlo, lanza este prompt a tu agente:
+```bash
+npx skills@latest add mattpocock/skills --skill grill-me grilling
+```
+
+1. **A pelo.** Lanza el prompt y pide los criterios de aceptación con los que darías la tarea por terminada. Sin implementar.
+2. **Interrogatorio.** En sesión nueva, lanza `/grill-me` con el mismo prompt hasta que pueda escribir los criterios de aceptación. Contesta tú como negocio.
+3. **Cotejo.** ¿Qué salió solo en la segunda vuelta? ¿Estaba escrito en algún sitio?
 
 > Añade al comparador cuál de los coches sale más barato en España.
