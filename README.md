@@ -11,6 +11,28 @@ pnpm dev
 
 ## Práctica
 
-Lanza este prompt a tu agente:
+La misma petición de la rama `base`, ahora en tres fases: investigar, planificar e implementar. Cada fase se lanza en una conversación nueva y le pasa a la siguiente un único fichero.
 
-> Añade al comparador cuál de los coches sale más barato en España.
+1. **Research**: investiga el código, los datos de la API y el negocio, y termina con las preguntas que la petición deja abiertas.
+
+   ```
+   /rpi-research Añade al comparador cuál de los coches sale más barato en España.
+   ```
+
+   Al final pregunta si lo guarda en `research.md`.
+
+2. **Plan**: en una conversación nueva, resuelve contigo cada pregunta abierta y reparte el trabajo en fases con su verificación.
+
+   ```
+   /rpi-plan @research.md
+   ```
+
+   Al final pregunta si lo guarda en `plan.md`.
+
+3. **Implement**: en otra conversación nueva, ejecuta el plan fase a fase y para al final de cada una para que la revises.
+
+   ```
+   /rpi-implement @plan.md
+   ```
+
+Las skills están en `.claude/skills/`.
