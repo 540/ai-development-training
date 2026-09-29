@@ -1,0 +1,17 @@
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.wide {
+  max-width: 1200px;
+}
+
+.main a {
+  color: var(--color-primary);
+}

@@ -1,38 +1,40 @@
-# Comparador de coches
+# Comparador de coches — con guardarraíles
 
 Comparador de coches sobre la API de [fueleconomy.gov](https://www.fueleconomy.gov/feg/ws/) (EPA): listado por año y marca con buscador y filtros, ficha de cada versión y comparación lado a lado de hasta tres coches.
 
-## Arrancar
+La app es el pretexto. Esta rama trae el mismo comparador ordenado por capas y los criterios del equipo convertidos en herramientas estándar, para que se puedan comprobar sin que nadie tenga que repetírselos al agente.
+
+## Los guardarraíles
+
+| guardarraíl | herramienta | qué exige |
+|---|---|---|
+| tipos | TypeScript | el proyecto compila |
+| nombres | ESLint: `naming-convention` y `unicorn/filename-case` | camelCase; PascalCase para componentes y tipos; MAYÚSCULAS para constantes; ficheros en camelCase o PascalCase |
+| clases CSS | Stylelint | camelCase, sin guiones |
+| sin `any` | ESLint: `no-explicit-any` | todo tipado |
+| colores | Stylelint y ESLint | solo las variables de `src/ui/styles/globals.css` |
+| idioma | cspell | el código en inglés; los textos de pantalla, en castellano y solo en `src/ui/texts/` |
+| arquitectura | dependency-cruiser y ESLint | las vistas no llaman a la API ni importan infraestructura; el dominio no depende de nadie; sin ciclos ni huérfanos |
+| tests | Vitest y Testing Library | la suite pasa |
+
+## Cómo se ejecuta
 
 ```bash
 pnpm install
-pnpm dev
+pnpm dev       # la app
+pnpm verify    # todos los guardarraíles
+```
+
+Cada uno por separado:
+
+```bash
+pnpm typecheck   pnpm lint   pnpm lint:css   pnpm spell   pnpm arch   pnpm test
 ```
 
 ## Práctica
 
-La misma petición de la rama `base`, ahora en tres fases: investigar, planificar e implementar. Cada fase se lanza en una conversación nueva y le pasa a la siguiente un único fichero.
+Los guardarraíles existen, pero nadie los ejecuta solos: solo corren si alguien lanza `pnpm verify`. La práctica es decidir cuándo tienen que correr mientras el agente desarrolla y montarlo en tu herramienta (Claude Code, Cursor, Codex, Copilot…) para que el agente se corrija solo sin que tengas que pedírselo.
 
-1. **Research**: investiga el código, los datos de la API y el negocio, y termina con las preguntas que la petición deja abiertas.
+Para probarlo, lanza este prompt a tu agente:
 
-   ```
-   /rpi-research Añade al comparador cuál de los coches sale más barato en España.
-   ```
-
-   Al final pregunta si lo guarda en `research.md`.
-
-2. **Plan**: en una conversación nueva, fija los supuestos y diseña la solución en el código: qué ficheros se crean y cuáles se tocan, qué piezas van en cada uno y en qué fases se construye, con su verificación.
-
-   ```
-   /rpi-plan @research.md
-   ```
-
-   Al final pregunta si lo guarda en `plan.md`.
-
-3. **Implement**: en otra conversación nueva, ejecuta el plan fase a fase y para al final de cada una para que la revises.
-
-   ```
-   /rpi-implement @plan.md
-   ```
-
-Las skills están en `.agents/skills/`, que leen Cursor, Codex y Copilot; `.claude/skills` es un enlace a esa carpeta para Claude Code. En Claude Code, Cursor y Copilot se lanzan con `/rpi-research`; en Codex, con `$rpi-research`.
+> Añade al comparador cuál de los coches sale más barato en España.

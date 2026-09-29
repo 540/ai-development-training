@@ -1,0 +1,36 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "import": [
+    "@cspell/dict-es-es/cspell-ext.json"
+  ],
+  "files": [
+    "src/**/*.{ts,tsx,css}"
+  ],
+  "ignorePaths": [
+    "node_modules",
+    "dist",
+    "src/**/*.svg"
+  ],
+  "overrides": [
+    {
+      "filename": "src/ui/texts/**",
+      "language": "en,es"
+    }
+  ],
+  "words": [
+    "atv",
+    "bifuel",
+    "displ",
+    "enchufable",
+    "fueleconomy",
+    "gpm",
+    "lpg",
+    "microcompacto",
+    "midgrade",
+    "minicompact",
+    "mpge",
+    "pmsm",
+    "trany"
+  ]
+}

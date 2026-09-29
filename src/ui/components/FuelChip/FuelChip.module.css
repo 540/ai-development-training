@@ -1,0 +1,28 @@
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 20px;
+  padding: 0 8px 0 6px;
+  border-radius: 100px;
+  color: var(--color-white);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 12px;
+}
+
+.large {
+  height: 26px;
+  padding: 0 12px 0 8px;
+  font-size: 13px;
+  line-height: 14px;
+}
+
+.icon {
+  height: 14px;
+  filter: invert(1);
+}
+
+.large .icon {
+  height: 18px;
+}

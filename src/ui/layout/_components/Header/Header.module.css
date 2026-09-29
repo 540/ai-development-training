@@ -1,0 +1,31 @@
+.header {
+  border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-white);
+}
+
+.inner {
+  display: flex;
+  justify-content: space-between;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.menu {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  list-style: none;
+}
+
+.active {
+  border-bottom: 2px solid var(--color-primary);
+}
