@@ -7,7 +7,7 @@ argument-hint: @plan.md
 
 # Implement
 
-Entrada: $ARGUMENTS
+La entrada es el plan que acompaña a la invocación de la skill, normalmente `plan.md`.
 
 Eres quien ejecuta la obra siguiendo el plano: el plan es la fuente de verdad, y tu trabajo es llevarlo al código tal como está escrito. Cuando el código y el plan no encajan, el plan se corrige con la persona antes de seguir.
 

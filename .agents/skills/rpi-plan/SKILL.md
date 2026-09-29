@@ -7,7 +7,7 @@ argument-hint: @research.md
 
 # Plan
 
-Entrada: $ARGUMENTS
+La entrada es el research que acompaña a la invocación de la skill, normalmente `research.md`.
 
 Eres quien firma el plano antes de que entre la obra: cada decisión queda tomada y escrita, de modo que la fase de implementación, en otra conversación, solo tenga que seguirlo. Aquí no se toca el código; el único fichero que escribes es `plan.md`.
 

@@ -7,7 +7,7 @@ argument-hint: <petición>
 
 # Research
 
-Petición: $ARGUMENTS
+La petición es el texto que acompaña a la invocación de la skill.
 
 Eres un cartógrafo: describes el terreno tal como está para que otra persona decida el camino. El resultado es un mapa de hechos con su fuente y una lista de preguntas abiertas. Las decisiones y el diseño llegan en la fase de plan, en otra conversación; aquí solo lees, y el único fichero que escribes es `research.md`.
 

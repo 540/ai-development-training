@@ -35,4 +35,4 @@ La misma petición de la rama `base`, ahora en tres fases: investigar, planifica
    /rpi-implement @plan.md
    ```
 
-Las skills están en `.claude/skills/`.
+Las skills están en `.agents/skills/`, que leen Cursor, Codex y Copilot; `.claude/skills` es un enlace a esa carpeta para Claude Code. En Claude Code, Cursor y Copilot se lanzan con `/rpi-research`; en Codex, con `$rpi-research`.
