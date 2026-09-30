@@ -13,3 +13,7 @@ export const formatConsumption = (value: number | null | undefined): string =>
 
 /** An amount in US dollars, with the symbol after the figure */
 export const formatUsd = (value: number): string => `${formatNumber(value)} $`
+
+/** A unit price, always with two decimals (1,60 and not 1,6) */
+export const formatPrice = (value: number): string =>
+  value.toLocaleString(LOCALE, { minimumFractionDigits: 2, maximumFractionDigits: 2 })

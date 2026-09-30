@@ -1,9 +1,11 @@
 import { fireEvent, screen, within } from '@testing-library/react'
 
+import { ANNUAL_KILOMETERS, SPAIN_ENERGY_PRICES } from '@/core/Vehicle/domain/spainEnergyCost'
 import { bz4xDTO, camryDTO } from '@/test/fixtures'
 import { mockFuelEconomyApi } from '@/test/utils/fuelEconomyApi'
 import { render } from '@/test/utils/render'
 import { TEXTS } from '@/ui/texts/texts'
+import { formatNumber, formatPrice } from '@/ui/utils/format'
 import { Compare } from '../Compare'
 
 const compare = (ids: string[]) => localStorage.setItem('comparedVehicles', JSON.stringify(ids))
@@ -37,5 +39,39 @@ describe('Compare', () => {
 
     expect(await screen.findByText('Toyota bZ4X Limited')).toBeInTheDocument()
     expect(screen.queryByText('Toyota Camry')).not.toBeInTheDocument()
+  })
+
+  it('shows the yearly energy cost in Spain and names the cheapest vehicle', async () => {
+    mockFuelEconomyApi([camryDTO, bz4xDTO])
+    compare(['47085', '47219'])
+
+    render(<Compare />)
+
+    await screen.findByText('Toyota Camry')
+    const spainRow = screen.getByText(TEXTS.compare.energyCostInSpain).closest('tr')
+    expect(within(spainRow!).getByText(formatNumber(561))).toHaveClass(/best/)
+    expect(within(spainRow!).getByText(formatNumber(2160))).not.toHaveClass(/best/)
+    expect(screen.getByText(TEXTS.compare.cheapestInSpain('Toyota bZ4X Limited', formatNumber(561)))).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        TEXTS.compare.costAssumptionsInSpain(
+          formatNumber(ANNUAL_KILOMETERS),
+          formatPrice(SPAIN_ENERGY_PRICES.gasolineEurPerLiter),
+          formatPrice(SPAIN_ENERGY_PRICES.dieselEurPerLiter),
+          formatPrice(SPAIN_ENERGY_PRICES.electricityEurPerKwh),
+        ),
+      ),
+    ).toBeInTheDocument()
+  })
+
+  it('names no cheapest vehicle when there is a single one', async () => {
+    mockFuelEconomyApi([camryDTO])
+    compare(['47085'])
+
+    render(<Compare />)
+
+    await screen.findByText('Toyota Camry')
+    expect(screen.getByText(TEXTS.compare.energyCostInSpain)).toBeInTheDocument()
+    expect(screen.queryByText(TEXTS.compare.cheapestInSpain('Toyota Camry', formatNumber(2160)))).not.toBeInTheDocument()
   })
 })

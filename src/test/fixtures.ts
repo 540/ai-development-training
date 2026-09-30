@@ -145,3 +145,26 @@ export const bz4x: Vehicle = {
   greenhouseGasScore: 10,
   fiveYearSavingsUsd: 6000,
 }
+
+export const priusPrime: Vehicle = {
+  ...camry,
+  id: '47501',
+  model: 'Prius Prime SE',
+  trim: 'Auto (variable gear ratios), 4 cyl, 2.0 L',
+  fuel: 'plugInHybrid',
+  fuelType: 'Regular Gas and Electricity',
+  transmission: 'Automatic (variable gear ratios)',
+  cylinders: 4,
+  displacement: 2,
+  electricMotor: '120 kW AC Induction',
+  liters: { city: 4.4, highway: 4.6, combined: 4.5 },
+  electricity: { city: 14.9, highway: 18, combined: 16.2 },
+  co2: 31,
+  annualFuelCostUsd: 1250,
+  range: 966,
+  electricRange: 72,
+  utilityFactor: 0.71,
+  fuelEconomyScore: 9,
+  greenhouseGasScore: 10,
+  fiveYearSavingsUsd: 7500,
+}
