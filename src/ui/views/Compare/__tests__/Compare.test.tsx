@@ -10,6 +10,14 @@ import { Compare } from '../Compare'
 
 const compare = (ids: string[]) => localStorage.setItem('comparedVehicles', JSON.stringify(ids))
 
+const spainCostAssumptions = () =>
+  TEXTS.compare.costAssumptionsInSpain(
+    formatNumber(ANNUAL_KILOMETERS),
+    formatPrice(SPAIN_ENERGY_PRICES.gasolineEurPerLiter),
+    formatPrice(SPAIN_ENERGY_PRICES.dieselEurPerLiter),
+    formatPrice(SPAIN_ENERGY_PRICES.electricityEurPerKwh),
+  )
+
 describe('Compare', () => {
   it('asks to pick vehicles when there is nothing to compare', () => {
     render(<Compare />)
@@ -52,15 +60,19 @@ describe('Compare', () => {
     expect(within(spainRow!).getByText(formatNumber(561))).toHaveClass(/best/)
     expect(within(spainRow!).getByText(formatNumber(2160))).not.toHaveClass(/best/)
     expect(screen.getByText(TEXTS.compare.cheapestInSpain('Toyota bZ4X Limited', formatNumber(561)))).toBeInTheDocument()
+    expect(screen.getByText(spainCostAssumptions())).toBeInTheDocument()
+  })
+
+  it('names every tied vehicle, separated by commas', async () => {
+    const bz4xXleDTO = { ...bz4xDTO, id: '47220', model: 'bZ4X XLE' }
+    mockFuelEconomyApi([bz4xDTO, bz4xXleDTO])
+    compare(['47219', '47220'])
+
+    render(<Compare />)
+
+    await screen.findByText('Toyota bZ4X XLE')
     expect(
-      screen.getByText(
-        TEXTS.compare.costAssumptionsInSpain(
-          formatNumber(ANNUAL_KILOMETERS),
-          formatPrice(SPAIN_ENERGY_PRICES.gasolineEurPerLiter),
-          formatPrice(SPAIN_ENERGY_PRICES.dieselEurPerLiter),
-          formatPrice(SPAIN_ENERGY_PRICES.electricityEurPerKwh),
-        ),
-      ),
+      screen.getByText(TEXTS.compare.cheapestInSpain('Toyota bZ4X Limited, Toyota bZ4X XLE', formatNumber(561))),
     ).toBeInTheDocument()
   })
 
@@ -72,6 +84,8 @@ describe('Compare', () => {
 
     await screen.findByText('Toyota Camry')
     expect(screen.getByText(TEXTS.compare.energyCostInSpain)).toBeInTheDocument()
-    expect(screen.queryByText(TEXTS.compare.cheapestInSpain('Toyota Camry', formatNumber(2160)))).not.toBeInTheDocument()
+    expect(screen.getByText(spainCostAssumptions())).toBeInTheDocument()
+    const verdictPrefix = TEXTS.compare.cheapestInSpain('', '').split(':')[0]
+    expect(screen.queryByText(verdictPrefix, { exact: false })).not.toBeInTheDocument()
   })
 })
