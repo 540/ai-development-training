@@ -56,6 +56,16 @@ describe('annualEnergyCostInSpain', () => {
     expect(annualEnergyCostInSpain({ ...priusPrime, liters: null })).toBeNull()
     expect(annualEnergyCostInSpain({ ...priusPrime, electricity: null })).toBeNull()
   })
+
+  it('has no cost for a plug-in hybrid without a valid utility factor', () => {
+    expect(annualEnergyCostInSpain({ ...priusPrime, utilityFactor: 0 })).toBeNull()
+    expect(annualEnergyCostInSpain({ ...priusPrime, utilityFactor: -1 })).toBeNull()
+    expect(annualEnergyCostInSpain({ ...priusPrime, utilityFactor: 1.01 })).toBeNull()
+  })
+
+  it('prices a plug-in hybrid with a utility factor of 1 as fully electric', () => {
+    expect(annualEnergyCostInSpain({ ...priusPrime, utilityFactor: 1 })).toBe(486)
+  })
 })
 
 describe('cheapestInSpain', () => {

@@ -24,6 +24,8 @@ const gasolineCost = ({ liters }: Vehicle): number | null =>
 
 const noCost = (): null => null
 
+const isValidUtilityFactor = (factor: number): boolean => factor > 0 && factor <= 1
+
 const COST_BY_FUEL: Record<FuelKind, (vehicle: Vehicle) => number | null> = {
   gasoline: gasolineCost,
   hybrid: gasolineCost,
@@ -31,7 +33,7 @@ const COST_BY_FUEL: Record<FuelKind, (vehicle: Vehicle) => number | null> = {
   diesel: ({ liters }) => (liters ? fuelCost(liters, SPAIN_COST_ASSUMPTIONS.dieselEurPerLiter) : null),
   electric: ({ electricity }) => (electricity ? electricityCost(electricity) : null),
   plugInHybrid: ({ liters, electricity, utilityFactor }) =>
-    liters && electricity
+    liters && electricity && isValidUtilityFactor(utilityFactor)
       ? utilityFactor * electricityCost(electricity) +
         (1 - utilityFactor) * fuelCost(liters, SPAIN_COST_ASSUMPTIONS.gasolineEurPerLiter)
       : null,
@@ -43,7 +45,8 @@ const COST_BY_FUEL: Record<FuelKind, (vehicle: Vehicle) => number | null> = {
 
 /**
  * Yearly energy cost in Spain, in whole euros, with SPAIN_COST_ASSUMPTIONS.
- * Null when the fuel has no Spanish price or the consumption it needs is unknown.
+ * Null when the fuel has no Spanish price, the consumption it needs is unknown
+ * or a plug-in hybrid has no valid utility factor.
  */
 export const annualEnergyCostInSpain = (vehicle: Vehicle): number | null => {
   const cost = COST_BY_FUEL[vehicle.fuel](vehicle)

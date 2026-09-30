@@ -6,6 +6,8 @@ import { render } from '@/test/utils/render'
 import { TEXTS } from '@/ui/texts/texts'
 import { Compare } from '../Compare'
 
+const CHEAPEST_MESSAGE = new RegExp(`^${TEXTS.compare.cheapestInSpain('', '').split(':')[0]}:`)
+
 const compare = (ids: string[]) => localStorage.setItem('comparedVehicles', JSON.stringify(ids))
 
 describe('Compare', () => {
@@ -50,7 +52,7 @@ describe('Compare', () => {
     await screen.findByText('Toyota Hydrogen')
     const costRow = screen.getByText(TEXTS.compare.annualCostInSpain).closest('tr')
     expect(within(costRow!).getByText('—')).toBeInTheDocument()
-    expect(screen.queryByText(TEXTS.compare.cheapestInSpain('Toyota Camry', '2160 €'))).not.toBeInTheDocument()
+    expect(screen.queryByText(CHEAPEST_MESSAGE)).not.toBeInTheDocument()
   })
 
   it('does not name the cheapest with a single vehicle, but still explains the estimate', async () => {
@@ -60,7 +62,7 @@ describe('Compare', () => {
     render(<Compare />)
 
     await screen.findByText('Toyota Camry')
-    expect(screen.queryByText(TEXTS.compare.cheapestInSpain('Toyota Camry', '2160 €'))).not.toBeInTheDocument()
+    expect(screen.queryByText(CHEAPEST_MESSAGE)).not.toBeInTheDocument()
     expect(screen.getByText(TEXTS.compare.costInSpainNote('15.000', '1,60', '1,50', '0,20'))).toBeInTheDocument()
   })
 
