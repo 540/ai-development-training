@@ -48,7 +48,8 @@ describe('Compare', () => {
     render(<Compare />)
 
     await screen.findByText('Toyota Camry')
-    expect(screen.queryByText(TEXTS.compare.cheapestInSpain('Toyota Camry', '2160 €'))).not.toBeInTheDocument()
+    const cheapestPrefix = TEXTS.compare.cheapestInSpain('', '').split(':')[0]
+    expect(screen.queryByText((content) => content.startsWith(cheapestPrefix))).not.toBeInTheDocument()
     expect(screen.getByText(TEXTS.compare.costInSpainNote('15.000', '1,60', '1,50', '0,20'))).toBeInTheDocument()
   })
 
