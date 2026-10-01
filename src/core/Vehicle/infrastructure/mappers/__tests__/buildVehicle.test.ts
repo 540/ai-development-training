@@ -1,4 +1,4 @@
-import { bz4xDTO, camryDTO, priusPrimeDTO } from '@/test/fixtures'
+import { bz4xDTO, camryDTO, priusPrime, priusPrimeDTO } from '@/test/fixtures'
 import { buildVehicle, toMenuItems } from '../buildVehicle'
 
 describe('buildVehicle', () => {
@@ -37,6 +37,10 @@ describe('buildVehicle', () => {
     expect(vehicle.electricity?.combined).toBe(16.2)
     expect(vehicle.electricRange).toBe(72)
     expect(vehicle.utilityFactor).toBe(0.71)
+  })
+
+  it('builds the plug-in hybrid fixture the rest of the tests rely on', () => {
+    expect(buildVehicle(priusPrimeDTO)).toEqual(priusPrime)
   })
 
   it('treats a vehicle with no alternative fuel as gasoline', () => {

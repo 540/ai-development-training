@@ -1,4 +1,4 @@
-import { formatConsumption, formatNumber, formatUsd } from '../format'
+import { formatConsumption, formatEur, formatNumber, formatPrice, formatUsd } from '../format'
 
 describe('format', () => {
   it('writes decimals with a comma', () => {
@@ -16,5 +16,13 @@ describe('format', () => {
 
   it('writes dollars with the symbol after the figure', () => {
     expect(formatUsd(950)).toBe('950 $')
+  })
+
+  it('writes euros with the symbol after the figure', () => {
+    expect(formatEur(2160)).toBe('2160 €')
+  })
+
+  it('writes a price with two decimals', () => {
+    expect(formatPrice(1.6)).toBe('1,60')
   })
 })

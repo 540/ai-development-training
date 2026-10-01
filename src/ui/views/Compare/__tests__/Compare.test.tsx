@@ -27,6 +27,44 @@ describe('Compare', () => {
     expect(within(co2Row!).getByText('210')).not.toHaveClass(/best/)
   })
 
+  it('shows the yearly energy cost in Spain and highlights the cheapest', async () => {
+    mockFuelEconomyApi([camryDTO, bz4xDTO])
+    compare(['47085', '47219'])
+
+    render(<Compare />)
+
+    await screen.findByText('Toyota Camry')
+    const costRow = screen.getByText(TEXTS.compare.annualCostInSpain).closest('tr')
+    expect(within(costRow!).getByText('561 €')).toHaveClass(/best/)
+    expect(within(costRow!).getByText('2160 €')).not.toHaveClass(/best/)
+    expect(screen.getByText(TEXTS.compare.cheapestInSpain('Toyota bZ4X Limited', '561 €'))).toBeInTheDocument()
+    expect(screen.getByText(TEXTS.compare.costInSpainNote('15.000', '1,60', '1,50', '0,20'))).toBeInTheDocument()
+  })
+
+  it('names no cheapest vehicle with a single one, but still explains the estimate', async () => {
+    mockFuelEconomyApi([camryDTO])
+    compare(['47085'])
+
+    render(<Compare />)
+
+    await screen.findByText('Toyota Camry')
+    const cheapestPrefix = TEXTS.compare.cheapestInSpain('', '').split(':')[0]
+    expect(screen.queryByText((content) => content.startsWith(cheapestPrefix))).not.toBeInTheDocument()
+    expect(screen.getByText(TEXTS.compare.costInSpainNote('15.000', '1,60', '1,50', '0,20'))).toBeInTheDocument()
+  })
+
+  it('shows a dash when a vehicle has no cost in Spain', async () => {
+    mockFuelEconomyApi([camryDTO, { ...bz4xDTO, atvType: 'FCV' }])
+    compare(['47085', '47219'])
+
+    render(<Compare />)
+
+    await screen.findByText('Toyota Camry')
+    const costRow = screen.getByText(TEXTS.compare.annualCostInSpain).closest('tr')
+    expect(within(costRow!).getByText('—')).toBeInTheDocument()
+    expect(within(costRow!).getByText('2160 €')).toHaveClass(/best/)
+  })
+
   it('removes a vehicle from the comparison', async () => {
     mockFuelEconomyApi([camryDTO, bz4xDTO])
     compare(['47085', '47219'])

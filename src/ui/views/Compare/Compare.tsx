@@ -1,6 +1,7 @@
 import { FC, ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 
+import { annualEnergyCostInSpain, cheapestInSpain, SPAIN_COST_ASSUMPTIONS } from '@/core/Vehicle/domain/spainCost'
 import { Vehicle } from '@/core/Vehicle/domain/Vehicle'
 import { Main } from '@/ui/components/Main'
 import { VehicleCardSkeleton } from '@/ui/components/VehicleCardSkeleton'
@@ -9,7 +10,7 @@ import { detailsPath, paths } from '@/ui/router/paths'
 import { FUEL_COLORS } from '@/ui/styles/utils/colors'
 import { driveLabel, FUEL_LABELS, transmissionLabel, vehicleClassLabel } from '@/ui/texts/labels'
 import { TEXTS } from '@/ui/texts/texts'
-import { EMPTY_VALUE, formatConsumption, formatNumber } from '@/ui/utils/format'
+import { EMPTY_VALUE, formatConsumption, formatEur, formatNumber, formatPrice } from '@/ui/utils/format'
 
 import { useComparedVehicles } from './_hooks/useComparedVehicles'
 import classes from './Compare.module.css'
@@ -21,6 +22,8 @@ interface Row {
   best?: 'lowest' | 'highest'
   /** Show the number with one decimal */
   decimal?: boolean
+  /** Show the number as an amount in euros */
+  money?: boolean
 }
 
 const ROWS: Row[] = [
@@ -49,6 +52,7 @@ const ROWS: Row[] = [
   },
   { title: TEXTS.compare.co2, value: (vehicle) => vehicle.co2, best: 'lowest' },
   { title: TEXTS.compare.annualFuelCost, value: (vehicle) => vehicle.annualFuelCostUsd, best: 'lowest' },
+  { title: TEXTS.compare.annualCostInSpain, value: annualEnergyCostInSpain, best: 'lowest', money: true },
   { title: TEXTS.compare.range, value: (vehicle) => vehicle.range, best: 'highest' },
   { title: TEXTS.compare.fuelEconomyScore, value: (vehicle) => vehicle.fuelEconomyScore, best: 'highest' },
 ]
@@ -68,8 +72,18 @@ const formatCell = (row: Row, value: number | string | null): string => {
   if (typeof value === 'string') {
     return value
   }
+  if (row.money) {
+    return formatEur(value)
+  }
   return row.decimal ? formatConsumption(value) : formatNumber(value)
 }
+
+const SPAIN_COST_NOTE = TEXTS.compare.costInSpainNote(
+  formatNumber(SPAIN_COST_ASSUMPTIONS.kilometersPerYear),
+  formatPrice(SPAIN_COST_ASSUMPTIONS.gasolineEurPerLiter),
+  formatPrice(SPAIN_COST_ASSUMPTIONS.dieselEurPerLiter),
+  formatPrice(SPAIN_COST_ASSUMPTIONS.electricityEurPerKwh),
+)
 
 const Message: FC<{ children: ReactNode }> = ({ children }) => <Main>{children}</Main>
 
@@ -105,9 +119,19 @@ export const Compare: FC = () => {
     )
   }
 
+  const cheapest = cheapestInSpain(vehicles)
+
   return (
     <Main wide>
       <h1>{TEXTS.compare.title}</h1>
+      {cheapest && (
+        <p className={classes.cheapest}>
+          {TEXTS.compare.cheapestInSpain(
+            `${cheapest.vehicle.make} ${cheapest.vehicle.model}`,
+            formatEur(cheapest.annualCost),
+          )}
+        </p>
+      )}
       <div className={classes.scroll}>
         <table className={classes.table}>
           <thead>
@@ -146,6 +170,7 @@ export const Compare: FC = () => {
           </tbody>
         </table>
       </div>
+      <p className={classes.note}>{SPAIN_COST_NOTE}</p>
     </Main>
   )
 }
