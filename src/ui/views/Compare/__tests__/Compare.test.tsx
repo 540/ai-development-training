@@ -38,4 +38,47 @@ describe('Compare', () => {
     expect(await screen.findByText('Toyota bZ4X Limited')).toBeInTheDocument()
     expect(screen.queryByText('Toyota Camry')).not.toBeInTheDocument()
   })
+
+  describe('energy cost in Spain', () => {
+    const note = TEXTS.compare.energyCostNote('12.000', '1,60', '1,50', '0,20')
+    const costRow = () => screen.getByText(TEXTS.compare.energyCost).closest('tr')!
+
+    it('shows the yearly cost of each vehicle and says which one is cheapest', async () => {
+      mockFuelEconomyApi([camryDTO, bz4xDTO])
+      compare(['47085', '47219'])
+
+      render(<Compare />)
+
+      expect(await screen.findByText('Toyota Camry')).toBeInTheDocument()
+      expect(within(costRow()).getByText('449')).toHaveClass(/best/)
+      expect(within(costRow()).getByText('1728')).not.toHaveClass(/best/)
+      expect(screen.getByText(TEXTS.compare.cheapest('Toyota bZ4X Limited', '449 €'))).toBeInTheDocument()
+      expect(screen.getByText(note)).toBeInTheDocument()
+    })
+
+    it('does not name a cheapest vehicle when there is only one', async () => {
+      mockFuelEconomyApi([camryDTO])
+      compare(['47085'])
+
+      render(<Compare />)
+
+      expect(await screen.findByText('Toyota Camry')).toBeInTheDocument()
+      expect(within(costRow()).getByText('1728')).toBeInTheDocument()
+      expect(screen.getByText(note)).toBeInTheDocument()
+      expect(screen.queryByText(TEXTS.compare.cheapest('Toyota Camry', '1728 €'))).not.toBeInTheDocument()
+    })
+
+    it('highlights every tied vehicle and names the first one', async () => {
+      mockFuelEconomyApi([camryDTO, { ...camryDTO, id: '1', model: 'Camry LE' }])
+      compare(['47085', '1'])
+
+      render(<Compare />)
+
+      expect(await screen.findByText('Toyota Camry LE')).toBeInTheDocument()
+      within(costRow())
+        .getAllByText('1728')
+        .forEach((cell) => expect(cell).toHaveClass(/best/))
+      expect(screen.getByText(TEXTS.compare.cheapest('Toyota Camry', '1728 €'))).toBeInTheDocument()
+    })
+  })
 })
