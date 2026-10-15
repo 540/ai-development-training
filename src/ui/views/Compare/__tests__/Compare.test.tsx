@@ -65,7 +65,8 @@ describe('Compare', () => {
       expect(await screen.findByText('Toyota Camry')).toBeInTheDocument()
       expect(within(costRow()).getByText('1728')).toBeInTheDocument()
       expect(screen.getByText(note)).toBeInTheDocument()
-      expect(screen.queryByText(TEXTS.compare.cheapest('Toyota Camry', '1728 €'))).not.toBeInTheDocument()
+      const cheapestPrefix = TEXTS.compare.cheapest('', '').split(':')[0]
+      expect(screen.queryByText((content) => content.startsWith(cheapestPrefix))).not.toBeInTheDocument()
     })
 
     it('highlights every tied vehicle and names the first one', async () => {
