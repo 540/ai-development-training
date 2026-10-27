@@ -1,0 +1,22 @@
+{"runId": "2798-39647",
+ "response":
+ {"mechanical":
+  {"specsChecked": 5,
+   "requirementsViolated": 13,
+   "requirementsVerified": 0,
+   "requirementsInferred": 2,
+   "requirementCensus":
+   {"witnessUnexercised": 11,
+    "witnessHeld": 0,
+    "violated": 13,
+    "verified": 0,
+    "statedFailure": 1,
+    "requirements": 24,
+    "observed": 0,
+    "notDecided": 0,
+    "modules": 5,
+    "documented": 0,
+    "agentVerified": 0},
+   "functionsWithIssues": 6,
+   "findingsTotal": 7}},
+ "inputsDigest": "16091776173367783563:prove="}

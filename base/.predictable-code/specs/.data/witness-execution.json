@@ -1,0 +1,9 @@
+[{"why": null,
+  "truncated": false,
+  "succeeded": true,
+  "stdout": "",
+  "stderr": "",
+  "label": "typescript front end (4 source file(s) staged)",
+  "exitCode": 0,
+  "command":
+  "<node> --max-old-space-size=<sized from free memory> <typescript front end> --witness <project>/.predictable-code/base/.predictable-code/verification/.property-check/contract-stage/typescript-sites/witness-request-typescript.json <project>/.predictable-code/base/.predictable-code/verification/.property-check/contract-stage/typescript-sites/witness-result-typescript.json"}]

@@ -1,0 +1,8 @@
+{"withoutAreas": [],
+ "version": 1,
+ "undescribed":
+ [{"specId": "SPEC-001",
+   "name": "src/App.tsx",
+   "key": "specs/src/App.tsx.spec.md"}],
+ "newlyUndescribed": ["specs/src/App.tsx.spec.md"],
+ "lastSyncUndescribed": ["specs/src/App.tsx.spec.md"]}
