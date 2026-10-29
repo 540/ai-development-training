@@ -97,6 +97,27 @@ export const bz4xDTO: VehicleDTO = {
   youSaveSpend: '6000',
 }
 
+/** 2024 Honda Accord, gasoline, as thirsty as the Camry (API id 47900) */
+export const accordDTO: VehicleDTO = {
+  ...emptyDTO,
+  id: '47900',
+  make: 'Honda',
+  model: 'Accord',
+  comb08: '26',
+}
+
+/** 2015 Honda Civic Natural Gas, compressed natural gas (API id 35500) */
+export const civicNaturalGasDTO: VehicleDTO = {
+  ...emptyDTO,
+  id: '35500',
+  year: '2015',
+  make: 'Honda',
+  model: 'Civic Natural Gas',
+  atvType: 'CNG',
+  fuelType: 'Natural Gas',
+  comb08: '31',
+}
+
 /** The same vehicles once built, as the rest of the app sees them */
 export const camry: Vehicle = {
   id: '47085',

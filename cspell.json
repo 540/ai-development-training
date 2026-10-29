@@ -26,12 +26,14 @@
     "enchufable",
     "fueleconomy",
     "gpm",
+    "idae",
     "lpg",
     "microcompacto",
     "midgrade",
     "minicompact",
     "mpge",
     "pmsm",
+    "pvpc",
     "trany"
   ]
 }

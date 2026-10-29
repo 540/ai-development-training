@@ -79,8 +79,14 @@ export const TEXTS = {
     combinedLiters: 'Consumo combinado (L/100 km)',
     electricity: 'Consumo eléctrico (kWh/100 km)',
     co2: 'CO₂ (g/km)',
-    annualFuelCost: 'Gasto anual en combustible ($)',
+    annualEnergyCost: (kilometers: string) => `Coste anual de energía en España (${kilometers} km)`,
     range: 'Autonomía (km)',
     fuelEconomyScore: 'Puntuación de consumo',
+    cheapest: (winner: string, amount: string, priciest: string) =>
+      `El más barato en España es ${winner}: ${amount} € al año menos que ${priciest}`,
+    cheapestTie: (vehicles: string[]) =>
+      `${vehicles.slice(0, -1).join(', ')} y ${vehicles[vehicles.length - 1]} salen igual de baratos en España`,
+    energyAssumptions: (gasoline: string, diesel: string, electricity: string, month: string, kilometers: string) =>
+      `Gasolina 95 a ${gasoline} €/L, diésel a ${diesel} €/L y luz a ${electricity} €/kWh cargando en casa (precios de ${month}), con ${kilometers} km al año.`,
   },
 }
