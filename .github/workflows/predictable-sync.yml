@@ -27,7 +27,7 @@
 # The stamp below is how the Control Center knows whether this repository is running a
 # current copy. It is compared as a NUMBER, never as a diff, so your own edits to this
 # file — a bigger `runner:`, a different `heap_mb` — are yours and are left alone.
-# predictable-workflow-version: 63
+# predictable-workflow-version: 64
 name: Predictable Code
 
 on:
@@ -1262,6 +1262,21 @@ jobs:
             predictable-reuse-${{ github.ref_name }}-
             predictable-reuse-
 
+      # THE LEAN MIRROR'S BUILD, in an entry of its own named by its CONTENT (the hash of its
+      # traces): about a gigabyte on a large Lean project, so kept beside the reuse stores under
+      # their per-run key it was written again by every run, and a few branches evicted each other
+      # from the repository's cache. Lake's traces are content hashes, so a build from an older tree
+      # or another branch is never wrong, only rebuilt where it differs.
+      - name: Restore the Lean mirror's build
+        id: leanbuild
+        uses: actions/cache/restore@v5
+        with:
+          path: .predictable-code/${{ github.ref_name }}/.predictable-code/verification/.lake/build
+          key: predictable-lean-build-${{ github.ref_name }}-
+          restore-keys: |
+            predictable-lean-build-${{ github.ref_name }}-
+            predictable-lean-build-
+
       - name: Run
         id: analyse
         env:
@@ -2085,6 +2100,15 @@ jobs:
           # THE SYNC PUBLISHES ITSELF: it commits this branch's analysis to `predictable-code-database`
           # and pushes it, the same way a sync on a developer's machine does.
           elif [ "${PC_COMMAND}" = "sync" ]; then
+            # AN ANALYSIS STOPS INSIDE ITS HOUR, so what it built is KEPT. A first analysis of a large
+            # Lean project does not fit one hour on the standard runner (this product's own
+            # repository: its ~1,250 mirrored modules alone are 50–70 minutes on two cores), and a
+            # job GitHub cancels runs no later step, so it kept nothing and the next one started over.
+            # Stopped fifteen minutes before the hour, the job still saves the Lean mirror's build and
+            # the other stores below, and the next analysis continues from them.
+            PC_JOB_SECONDS=3600
+            PC_STARTED="${PC_JOB_STARTED:-$(date +%s)}"
+            PC_HARD_STOP=$(( PC_STARTED + PC_JOB_SECONDS - 900 ))
             predictable sync --path "$PWD/.predictable-code" --json \
               > "$RESULT_JSON" 2> "$RUN_JSON" &
           # A REPUBLISH (#2257): the specs recompiled over the branch's analysis in the database — no
@@ -2098,6 +2122,10 @@ jobs:
               predictable specs compile --path "$PWD/.predictable-code" --json \
                 > "$RESULT_JSON" 2> "$RUN_JSON" &
             else
+              # As a sync's, above: stopped inside the hour so what it built is kept.
+              PC_JOB_SECONDS=3600
+              PC_STARTED="${PC_JOB_STARTED:-$(date +%s)}"
+              PC_HARD_STOP=$(( PC_STARTED + PC_JOB_SECONDS - 900 ))
               predictable sync --path "$PWD/.predictable-code" --json \
                 > "$RESULT_JSON" 2> "$RUN_JSON" &
             fi
@@ -2127,11 +2155,34 @@ jobs:
                 IMPL_LOGGED=$IMPL_LINES
               fi
             fi
+            # AN ANALYSIS SAYS WHERE IT IS AND WHAT IT COSTS, ONCE A MINUTE. Its output goes to
+            # `$RUN_JSON` and reaches this log only when it exits, so a run that the runner killed
+            # (out of memory: "The runner has received a shutdown signal", exit 143) or that GitHub
+            # cancelled at the hour left a log that said nothing for its whole length. MEASURED on
+            # this product's own repository: 25 silent minutes, then the shutdown. The line names
+            # the elapsed time, the last phase, the Lean mirror's progress, the machine's memory
+            # and the three largest processes, so the next such run says what it was doing.
+            if [ "${PC_COMMAND}" = "sync" ] || [ "${PC_COMMAND}" = "republish" ]; then
+              PC_BEAT_NOW=$(date +%s)
+              if [ $(( PC_BEAT_NOW - ${PC_LAST_BEAT:-0} )) -ge 60 ]; then
+                PC_LAST_BEAT=$PC_BEAT_NOW
+                PC_PHASE=$(grep -o '"phase":"[^"]*"' "$RUN_JSON" 2>/dev/null | tail -1 | cut -d'"' -f4 || true)
+                PC_MIRROR=$(grep -oE 'mirror built [0-9]+ of [0-9]+' "$RUN_JSON" 2>/dev/null | tail -1 || true)
+                PC_MEM=$(free -m 2>/dev/null | awk '/^Mem:/ {print $3 " of " $2 " MB used, " $7 " MB available"}' || true)
+                PC_TOP=$(ps -eo rss=,comm= --sort=-rss 2>/dev/null \
+                  | awk 'NR <= 3 {printf "%s %d MB; ", $2, $1 / 1024}' || true)
+                echo "[heartbeat] $(( PC_BEAT_NOW - ${PC_JOB_STARTED:-$PC_BEAT_NOW} ))s into the job; phase ${PC_PHASE:-starting}${PC_MIRROR:+; Lean }${PC_MIRROR}; memory ${PC_MEM:-unknown}; largest: ${PC_TOP:-unknown}"
+              fi
+            fi
             # THE SECOND LINE of a description run's time bound (#2264), set by its branch above:
             # past it the process is stopped, so the propose step still has time to run.
             if [ -n "${PC_HARD_STOP:-}" ] && [ "${PC_HARD_STOPPED:-no}" = "no" ] \
               && [ "$(date +%s)" -ge "$PC_HARD_STOP" ]; then
-              echo "::warning::${PC_COMMAND} is still running eight minutes before this job's timeout; stopping it so what it has can be proposed"
+              if [ "${PC_COMMAND}" = "sync" ] || [ "${PC_COMMAND}" = "republish" ]; then
+                echo "::warning::the analysis is still running fifteen minutes before this job's timeout; stopping it so what it built is kept for the next one"
+              else
+                echo "::warning::${PC_COMMAND} is still running eight minutes before this job's timeout; stopping it so what it has can be proposed"
+              fi
               # THE WHOLE TREE, never the one process: an implementation's agent is a grandchild
               # (`predictable implement` → `predictable claude` → `claude`), and stopping only the
               # driver orphaned it, still editing the checkout while the Propose step commits it.
@@ -2167,7 +2218,12 @@ jobs:
           # written before it is checkpointed), and the propose step reads them from the
           # checkpoint. Any other signal death is still reported as the crash it is, below. The
           # status is cleared on ONE line, guarded by the same test, so nothing else can clear it.
-          if [ "${PC_HARD_STOPPED:-no}" = "yes" ] && [ "$RUN_STATUS" -gt 128 ]; then
+          # A STOPPED ANALYSIS is not a crash either, and not an answer: it published nothing, the job
+          # fails as the verdict check below finds no verdict, and what it built is kept. Said here.
+          if [ "${PC_HARD_STOPPED:-no}" = "yes" ] && { [ "${PC_COMMAND}" = "sync" ] || [ "${PC_COMMAND}" = "republish" ]; }; then
+            echo "::warning::the analysis was stopped at its time bound before it finished; nothing was published, and what it built is kept, so the next analysis continues from it"
+            echo "The analysis was stopped at its time bound before it finished. Nothing was published; what it built is kept, so the next analysis continues from it." >> "$GITHUB_STEP_SUMMARY"
+          elif [ "${PC_HARD_STOPPED:-no}" = "yes" ] && [ "$RUN_STATUS" -gt 128 ]; then
             if [ "${PC_COMMAND}" = "spec-implement" ]; then
               echo "::warning::${PC_COMMAND} was stopped at its time bound; what the agent wrote is proposed as a draft, unchecked"
               echo "The implementation was stopped at its time bound; what the agent wrote is proposed as a draft, unchecked." >> "$GITHUB_STEP_SUMMARY"
@@ -2702,6 +2758,27 @@ jobs:
             .predictable-code/${{ github.ref_name }}/.predictable-code/verification/.property-check/run-cache
             .predictable-code/${{ github.ref_name }}/.predictable-code/verification/.analysis-cache
           key: predictable-reuse-${{ github.ref_name }}-${{ github.run_id }}
+
+      # Named by what it holds, and saved only when that is not what was restored: a run whose mirror
+      # did not change writes nothing, and the time left after the hard stop is not spent uploading.
+      - name: Name the Lean mirror's build
+        id: leankey
+        if: always()
+        env:
+          REF: ${{ github.ref_name }}
+          TRACES: ${{ hashFiles(format('.predictable-code/{0}/.predictable-code/verification/.lake/build/**/*.trace', github.ref_name)) }}
+        run: |
+          set -euo pipefail
+          if [ -n "$TRACES" ]; then
+            echo "key=predictable-lean-build-${REF}-${TRACES}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Keep the Lean mirror's build
+        if: always() && steps.leankey.outputs.key != '' && steps.leankey.outputs.key != steps.leanbuild.outputs.cache-matched-key
+        uses: actions/cache/save@v5
+        with:
+          path: .predictable-code/${{ github.ref_name }}/.predictable-code/verification/.lake/build
+          key: ${{ steps.leankey.outputs.key }}
 
       # NOT WHEN THE RESTORE MATCHED THIS VERY KEY: the entry already exists, so the save could only
       # be refused — after it had archived the whole store, seconds of every run spent on nothing.
