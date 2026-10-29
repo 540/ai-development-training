@@ -1,10 +1,10 @@
-import { fireEvent, screen, within } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 
 import { accordDTO, bz4xDTO, camryDTO, civicNaturalGasDTO, priusPrimeDTO } from '@/test/fixtures'
 import { mockFailingFuelEconomyApi, mockFuelEconomyApi } from '@/test/utils/fuelEconomyApi'
 import { render } from '@/test/utils/render'
 import { TEXTS } from '@/ui/texts/texts'
-import { EMPTY_VALUE, formatMonthYear } from '@/ui/utils/format'
+import { EMPTY_VALUE } from '@/ui/utils/format'
 import { Compare } from '../Compare'
 import { compareEnergyCostRow } from './__cases__/compareEnergyCost.cases'
 
@@ -28,7 +28,7 @@ const ASSUMPTIONS = TEXTS.compare.energyAssumptions(
   '1,867',
   '1,834',
   '0,16',
-  formatMonthYear({ year: 2026, month: 9 }),
+  'septiembre de 2026',
   '12.000',
 )
 
@@ -121,7 +121,9 @@ describe('Compare', () => {
 
     fireEvent.click(screen.getAllByText(TEXTS.compare.remove)[1])
 
-    expect(await screen.findByRole('status')).toHaveTextContent(TEXTS.compare.cheapest(PRIUS_PRIME, '1503', CAMRY))
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent(TEXTS.compare.cheapest(PRIUS_PRIME, '1503', CAMRY)),
+    )
 
     fireEvent.click(screen.getAllByText(TEXTS.compare.remove)[1])
 
@@ -129,6 +131,22 @@ describe('Compare', () => {
     expect(screen.queryByText('Toyota Prius Prime SE')).not.toBeInTheDocument()
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
     expect(screen.queryByText(ASSUMPTIONS)).not.toBeInTheDocument()
+  })
+
+  it('updates the summary and the table as soon as a vehicle is removed, before the new data arrives', async () => {
+    await renderComparison(['camry', 'bz4x', 'priusPrime'])
+    globalThis.fetch = vitest.fn(() => new Promise<Response>(() => undefined))
+
+    fireEvent.click(screen.getAllByText(TEXTS.compare.remove)[1])
+
+    expect(screen.getByRole('status')).toHaveTextContent(TEXTS.compare.cheapest(PRIUS_PRIME, '1503', CAMRY))
+    expect(screen.getByRole('status')).not.toHaveTextContent(BZ4X)
+    expect(screen.queryByText('Toyota bZ4X Limited')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getAllByText(TEXTS.compare.remove)[1])
+
+    expect(screen.queryByText('Toyota Prius Prime SE')).not.toBeInTheDocument()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 
   it('shows no summary while the vehicles load', () => {

@@ -117,16 +117,19 @@ export const Compare: FC = () => {
     )
   }
 
+  // The hook keeps the previous vehicles while it loads the new selection
+  const shown = vehicles.filter((vehicle) => ids.includes(vehicle.id))
+
   return (
     <Main wide>
       <h1>{TEXTS.compare.title}</h1>
-      <CheapestSummary vehicles={vehicles} />
+      <CheapestSummary vehicles={shown} />
       <div className={classes.scroll}>
         <table className={classes.table}>
           <thead>
             <tr>
               <th />
-              {vehicles.map((vehicle) => (
+              {shown.map((vehicle) => (
                 <th key={vehicle.id} className={classes.vehicle} style={{ borderTopColor: FUEL_COLORS[vehicle.fuel] }}>
                   <Link to={detailsPath(vehicle.id)}>
                     <span className={classes.year}>{vehicle.year}</span>
@@ -141,11 +144,11 @@ export const Compare: FC = () => {
           </thead>
           <tbody>
             {ROWS.map((row) => {
-              const best = bestValue(row, vehicles)
+              const best = bestValue(row, shown)
               return (
                 <tr key={row.title}>
                   <th>{row.title}</th>
-                  {vehicles.map((vehicle) => {
+                  {shown.map((vehicle) => {
                     const value = row.value(vehicle)
                     return (
                       <td key={vehicle.id} className={best !== null && value === best ? classes.best : undefined}>
