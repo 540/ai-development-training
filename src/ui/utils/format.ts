@@ -13,3 +13,10 @@ export const formatConsumption = (value: number | null | undefined): string =>
 
 /** An amount in US dollars, with the symbol after the figure */
 export const formatUsd = (value: number): string => `${formatNumber(value)} $`
+
+/** An amount in euros, with the symbol after the figure */
+export const formatEur = (value: number): string => `${formatNumber(value)} €`
+
+/** A month and its year, written out in Spanish */
+export const formatMonthYear = ({ year, month }: { year: number; month: number }): string =>
+  new Date(year, month - 1, 1).toLocaleDateString(LOCALE, { month: 'long', year: 'numeric' })

@@ -49,3 +49,24 @@ La API mide como en EE. UU. y la app enseña unidades europeas. La conversión s
 Los costes que sí trae están en **dólares y con precios de EE. UU.**: `fuelCost08` es el gasto anual en combustible y `youSaveSpend` lo que se ahorra o se gasta de más en 5 años frente al coche nuevo medio. No valen como coste en España.
 
 Cualquier cambio que necesite uno de estos datos tiene que decidir de dónde sale y dejarlo escrito como supuesto.
+
+### Supuestos del coste de energía en España
+
+La comparación calcula lo que cuesta al año la energía de cada coche en España (`annualEnergyCostEur`) y dice cuál sale más barato. Solo cuenta la energía para moverse: no entran el precio de compra, los impuestos, el seguro ni el mantenimiento. Los supuestos viven en un único sitio, `src/core/Vehicle/domain/energyCost.ts`, y no hay precios en vivo:
+
+- **Gasolina 95**: 1,867 €/L. **Diésel**: 1,834 €/L. Fuente: Boletín Petrolero de la UE, precios del 14/09/2026.
+- **Luz**: 0,16 €/kWh, cargando en casa. Fuente: precio medio del PVPC en 2026.
+- **Kilometraje**: 12.000 km al año. Fuente: media española de la DGT y el IDAE.
+- **Fecha que se enseña**: septiembre de 2026.
+
+Coste = consumo combinado × 12.000 / 100 × precio, redondeado a euros enteros solo al final. Reparto por `FuelKind`:
+
+| `FuelKind` | Se calcula con |
+|---|---|
+| `gasoline`, `hybrid`, `flexFuel` | `liters.combined` y gasolina 95 |
+| `diesel` | `liters.combined` y diésel |
+| `electric` | `electricity.combined` y luz |
+| `plugInHybrid` | `utilityFactor` × coste eléctrico + (1 − `utilityFactor`) × coste en gasolina; con factor 0, solo gasolina; si le falta una de las dos partes, sin coste |
+| `naturalGas`, `bifuelNaturalGas`, `bifuelLpg`, `hydrogen` | Sin coste: no hay precio fijado de GNC, GLP ni hidrógeno |
+
+Un coche sin el consumo que necesita tampoco tiene coste. Los coches sin coste salen con "—" y no cuentan para decidir el más barato.
