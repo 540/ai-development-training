@@ -3,7 +3,7 @@ predictable: overview
 ---
 ## Project overview
 
-`base` is made of 1 area — src — plus the project root, described area by area below. At run time it is built on `react` (imported by 1 of its modules) and `react-dom` (1), as `./package.json` lists them. Written by the run of 2026-10-27T15:14:37+00:00[UTC].
+`base` is made of 1 area — src — plus the project root, described area by area below. At run time it is built on `react` (imported by 1 of its modules) and `react-dom` (1), as `./package.json` lists them. Written by the run of 2026-11-02T14:27:37+00:00[UTC].
 
 `base` — “Comparador de coches sobre la API de [fueleconomy.gov](https://www.fueleconomy.gov/feg/ws/) (EPA): listado por año y marca con buscador y filtros, ficha de cada versión y comparación lado a lado de hasta tres coches.” 5 modules. 2 carry an inferred requirement, 13 requirements: 13 violated. 1 stated failure.
 

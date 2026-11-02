@@ -13,7 +13,7 @@
  "per-requirement and per-guideline code-location counts; an item with no locations is absent rather than zero",
  "inferred-analysis.json":
  "the Analysis-tab model — FIN-#### findings (fqn, condition, status, reachClass, vc, line, descriptor, enforcedBy) and entry points with their reached safe/issue finding ids. `status` is the FINDING's own: a row whose check lives in a project callee (`enforcedBy` set) stays 'issue' here — a caller can still reach the throw, which is what the entry-point view shows — while req-analysis.json shows the same obligation as a verified requirement with its enforcer named. Empty-shaped (never null) when no analysis ran",
- "generatedAt": "2026-10-27T15:14:38+00:00[UTC]",
+ "generatedAt": "2026-11-02T14:27:38+00:00[UTC]",
  "formality.json":
  "derived formality per requirement (formal / informal); `formal` includes rows recorded so BY PROVENANCE — machine-generated and backed by an analysis verdict — which the run's own log line splits out",
  "findings.json":
