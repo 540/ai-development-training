@@ -34,6 +34,11 @@ describe('annualEnergyCostEur', () => {
     expect(annualEnergyCostEur({ ...priusPrime, electricity: null })).toBeNull()
     expect(annualEnergyCostEur({ ...priusPrime, liters: null })).toBeNull()
   })
+
+  it('gives no cost to a plug-in hybrid with no utility factor', () => {
+    expect(annualEnergyCostEur({ ...priusPrime, utilityFactor: 0 })).toBeNull()
+    expect(annualEnergyCostEur({ ...priusPrime, utilityFactor: -1 })).toBeNull()
+  })
 })
 
 describe('cheapestInSpain', () => {

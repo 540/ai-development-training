@@ -26,7 +26,7 @@ const electricityCost: CostPer100Km = ({ electricity }) =>
 const plugInHybridCost: CostPer100Km = (vehicle) => {
   const electric = electricityCost(vehicle)
   const gasoline = gasolineCost(vehicle)
-  if (electric === null || gasoline === null) {
+  if (electric === null || gasoline === null || vehicle.utilityFactor <= 0) {
     return null
   }
   return vehicle.utilityFactor * electric + (1 - vehicle.utilityFactor) * gasoline
