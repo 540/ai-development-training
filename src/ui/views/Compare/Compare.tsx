@@ -1,6 +1,12 @@
 import { FC, ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 
+import {
+  annualEnergyCostEur,
+  cheapestInSpain,
+  SPAIN_ANNUAL_KILOMETERS,
+  SPAIN_ENERGY_PRICES,
+} from '@/core/Vehicle/domain/spainEnergyCost'
 import { Vehicle } from '@/core/Vehicle/domain/Vehicle'
 import { Main } from '@/ui/components/Main'
 import { VehicleCardSkeleton } from '@/ui/components/VehicleCardSkeleton'
@@ -9,7 +15,7 @@ import { detailsPath, paths } from '@/ui/router/paths'
 import { FUEL_COLORS } from '@/ui/styles/utils/colors'
 import { driveLabel, FUEL_LABELS, transmissionLabel, vehicleClassLabel } from '@/ui/texts/labels'
 import { TEXTS } from '@/ui/texts/texts'
-import { EMPTY_VALUE, formatConsumption, formatNumber } from '@/ui/utils/format'
+import { EMPTY_VALUE, formatConsumption, formatEur, formatNumber, formatPrice } from '@/ui/utils/format'
 
 import { useComparedVehicles } from './_hooks/useComparedVehicles'
 import classes from './Compare.module.css'
@@ -49,6 +55,7 @@ const ROWS: Row[] = [
   },
   { title: TEXTS.compare.co2, value: (vehicle) => vehicle.co2, best: 'lowest' },
   { title: TEXTS.compare.annualFuelCost, value: (vehicle) => vehicle.annualFuelCostUsd, best: 'lowest' },
+  { title: TEXTS.compare.annualEnergyCostSpain, value: annualEnergyCostEur, best: 'lowest' },
   { title: TEXTS.compare.range, value: (vehicle) => vehicle.range, best: 'highest' },
   { title: TEXTS.compare.fuelEconomyScore, value: (vehicle) => vehicle.fuelEconomyScore, best: 'highest' },
 ]
@@ -70,6 +77,13 @@ const formatCell = (row: Row, value: number | string | null): string => {
   }
   return row.decimal ? formatConsumption(value) : formatNumber(value)
 }
+
+const COST_ASSUMPTIONS = TEXTS.compare.costAssumptions(
+  formatNumber(SPAIN_ANNUAL_KILOMETERS),
+  formatPrice(SPAIN_ENERGY_PRICES.gasolineEurPerLiter),
+  formatPrice(SPAIN_ENERGY_PRICES.dieselEurPerLiter),
+  formatPrice(SPAIN_ENERGY_PRICES.electricityEurPerKwh)
+)
 
 const Message: FC<{ children: ReactNode }> = ({ children }) => <Main>{children}</Main>
 
@@ -105,9 +119,20 @@ export const Compare: FC = () => {
     )
   }
 
+  const cheapest = cheapestInSpain(vehicles)
+
   return (
     <Main wide>
       <h1>{TEXTS.compare.title}</h1>
+      {cheapest && (
+        <p className={classes.cheapest}>
+          {TEXTS.compare.cheapest(
+            `${cheapest.vehicle.year} ${cheapest.vehicle.make} ${cheapest.vehicle.model}`,
+            formatEur(cheapest.cost)
+          )}
+        </p>
+      )}
+      <p className={classes.note}>{COST_ASSUMPTIONS}</p>
       <div className={classes.scroll}>
         <table className={classes.table}>
           <thead>
