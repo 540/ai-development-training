@@ -80,6 +80,10 @@ export const TEXTS = {
     electricity: 'Consumo eléctrico (kWh/100 km)',
     co2: 'CO₂ (g/km)',
     annualFuelCost: 'Gasto anual en combustible ($)',
+    annualEnergyCostSpain: 'Gasto anual en energía en España (€)',
+    cheapest: (vehicle: string, cost: string) => `Más barato en España: ${vehicle} · ${cost} al año`,
+    costAssumptions: (kilometers: string, gasoline: string, diesel: string, electricity: string) =>
+      `Calculado con ${kilometers} km al año, gasolina a ${gasoline} €/L, diésel a ${diesel} €/L y electricidad a ${electricity} €/kWh. No incluye precio de compra ni impuestos.`,
     range: 'Autonomía (km)',
     fuelEconomyScore: 'Puntuación de consumo',
   },
