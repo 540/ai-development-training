@@ -1,0 +1,1 @@
+[{"calleePage":[],"callees":0,"callerPage":[{"callees":2,"callers":0,"danglingCalls":0,"fqn":"Code.src.App.App","isEntryPoint":true,"module":"src.App","reachable":true}],"callers":1,"danglingCalls":0,"fqn":"Code.src.App.sacarRuta","isEntryPoint":false,"isolated":false,"module":"src.App","reachable":true}]

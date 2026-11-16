@@ -1,22 +1,24 @@
-{"runId": "2753-134213",
+{"runId": "2607-151118",
  "response":
  {"mechanical":
-  {"specsChecked": 5,
-   "requirementsViolated": 13,
+  {"specsChecked": 3,
+   "requirementsViolated": 8,
    "requirementsVerified": 0,
    "requirementsInferred": 2,
    "requirementCensus":
-   {"witnessUnexercised": 11,
+   {"witnessUnexercised": 0,
     "witnessHeld": 0,
-    "violated": 13,
+    "violated": 8,
     "verified": 0,
+    "untested": 0,
+    "tested": 0,
     "statedFailure": 1,
-    "requirements": 24,
+    "requirements": 8,
     "observed": 0,
     "notDecided": 0,
-    "modules": 5,
+    "modules": 3,
     "documented": 0,
     "agentVerified": 0},
    "functionsWithIssues": 6,
    "findingsTotal": 7}},
- "inputsDigest": "16091776173367783563:prove="}
+ "inputsDigest": "95650509888219283:prove="}

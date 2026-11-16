@@ -1,0 +1,1 @@
+[{"calleePage":[],"callees":0,"callerPage":[{"callees":5,"callers":3,"danglingCalls":0,"fqn":"Code.src.App.convertir","isEntryPoint":false,"module":"src.App","reachable":true}],"callers":1,"danglingCalls":0,"fqn":"Code.src.App.km","isEntryPoint":false,"isolated":false,"module":"src.App","reachable":true}]
