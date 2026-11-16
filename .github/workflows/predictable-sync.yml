@@ -22,12 +22,14 @@
 # spec whose requirements a model writes, or a run that writes the specs' missing descriptions —
 # each one started by a person — reads an `ANTHROPIC_API_KEY` secret. A pull request review you
 # turned on reads it too, when it is there, to explain what it found and propose a verified fix;
-# without it the review still runs, because only the analysis decides its check.
+# without it the review still runs, because only the analysis decides its check. So does a person's
+# edit of a spec's description, when that spec's requirements were derived from it by a model:
+# they are derived again from the new description.
 #
 # The stamp below is how the Control Center knows whether this repository is running a
 # current copy. It is compared as a NUMBER, never as a diff, so your own edits to this
 # file — a bigger `runner:`, a different `heap_mb` — are yours and are left alone.
-# predictable-workflow-version: 64
+# predictable-workflow-version: 88
 name: Predictable Code
 
 on:
@@ -60,7 +62,11 @@ on:
         # AUTHOR a spec (#2019, #2342): each is one
         # deterministic CLI verb that edits one Markillo `.md`, and the propose step turns
         # that one file into a pull request. They need no model and no key — see the key
-        # check below, which runs for the two fix verbs only.
+        # check below, which runs for the two fix verbs only. ONE EXCEPTION (#2563): editing the
+        # DESCRIPTION of a spec whose requirements were derived from it derives them again, with a
+        # model, from the new description — so `spec-describe` is handed the key when there is one,
+        # like a review, and is never refused for its absence: an edit of a spec nothing was derived
+        # for still needs none, and one that needs a model and has none fails, writing nothing.
         #
         # `spec-generate` (#2055) authors a spec too, with the requirements WRITTEN BY A MODEL
         # from the person's name and short description: the same `specs new` verb without
@@ -69,7 +75,8 @@ on:
         #
         # `spec-fill-descriptions` (#2103) asks a model for the descriptions the specs lack —
         # every one, or the spec files `text` names — and proposes exactly the files it wrote on
-        # `predictable/specs/documentation`. It needs the key like a fix.
+        # `predictable/specs/documentation`. It needs the key like a fix. Its `prompt` is the
+        # areas mode the repository agent's duties ask for (#2629): `with`, `without` or `only`.
         #
         # `spec-implement` (#2339) IMPLEMENTS a spec: an agent changes the code until this run's own
         # analysis verifies every requirement of the spec and reports no finding the project did not
@@ -90,6 +97,16 @@ on:
         # pull request when a model key is there, and reports to the Control Center, whose App posts
         # the check and the comment. Only the analysis decides the check, so it needs no key.
         #
+        # `agent` (#2599) RUNS THE REPOSITORY AGENT on one GitHub event the repository chose: the
+        # Control Center writes the run's request to the database (`.agent/runs/<target>.json`) and
+        # dispatches it on the branch the event is about. `predictable agent run` gives one Claude
+        # session the Predictable Code plugin and this run's `predictable`, relays what the agent
+        # tells the person live, and holds its reply to what a run may do; this job then pushes and
+        # opens the pull requests the reply names through the one opener, and reports to the Control
+        # Center, whose App posts the comments and labels. It needs the key like a fix. The session
+        # holds no write token and no OIDC request token, and the job pushes only a pull request
+        # opened in this repository, onto its own head — never the default branch.
+        #
         # A SETTING AND A CLEAN ARE NOT VERBS HERE: both are writes to `predictable-code-database`,
         # which the Control Center makes itself.
         #
@@ -99,12 +116,12 @@ on:
         # publishes the result as the analysis of the commit it checked out. Keyless, and started by
         # the Control Center alone; over an analysis another build wrote it analyses instead, since
         # that analysis is not this build's to rebuild.
-        description: "What to run: sync (analyse), fix (one deterministic fix), fix-agent (one agent fix), fix-all-agent (every defect in one agent session, into a live draft pull request), spec-new / spec-describe / requirement-add / requirement-update / requirement-remove (author a spec), spec-generate (a new spec whose requirements a model writes), spec-fill-descriptions (a model writes the specs' missing descriptions), spec-implement (an agent implements a spec until the analysis verifies it), plugins-discover (an agent writes checks for defects the analysis misses, then the run syncs with them), review (review a pull request, on its head branch), or republish (rebuild the datasets over the last analysis when only module summaries changed)."
+        description: "What to run: sync (analyse), fix (one deterministic fix), fix-agent (one agent fix), fix-all-agent (every defect in one agent session, into a live draft pull request), autofix (apply, with no model, the fixes the analysis already decided for the batch of defects the Control Center wrote, and propose the verified ones as one pull request), spec-new / spec-describe / requirement-add / requirement-update / requirement-remove (author a spec), spec-generate (a new spec whose requirements a model writes), spec-fill-descriptions (a model writes the specs' missing descriptions), spec-implement (an agent implements a spec until the analysis verifies it), plugins-discover (an agent writes checks for defects the analysis misses, then the run syncs with them), review (review a pull request, on its head branch), agent (the repository agent reacts to one GitHub event), or republish (rebuild the datasets over the last analysis when only module summaries changed)."
         required: false
         default: sync
         type: string
       target:
-        description: "For a fix, the finding to fix. For spec-describe, requirement-add and spec-implement, the spec id. For requirement-update and requirement-remove, SPEC-ID/REQ-ID. For review, the pull request's number. Ignored by sync and spec-new."
+        description: "For a fix, the finding to fix. For spec-describe, requirement-add and spec-implement, the spec id. For requirement-update and requirement-remove, SPEC-ID/REQ-ID. For review, the pull request's number. For agent, the run's id. Ignored by sync and spec-new."
         required: false
         default: ""
         type: string
@@ -115,7 +132,7 @@ on:
         # come to be told something a local one is not.
         # For `spec-generate` it is the person's short description of the feature, which the
         # model expands: also what a model is asked, and also supplied verbatim.
-        description: "For command=fix-agent, what the agent is asked to do. For spec-generate, the person's short description of the feature."
+        description: "For command=fix-agent, what the agent is asked to do. For spec-generate, the person's short description of the feature. For spec-fill-descriptions, the areas mode: with (descriptions and areas, the default when empty), without (descriptions only) or only (areas of specs already described)."
         required: false
         default: ""
         type: string
@@ -177,6 +194,15 @@ on:
         required: false
         default: ""
         type: string
+      budget_usd:
+        # WHAT THIS RUN'S MODEL SESSIONS MAY SPEND (#2778, v88), in US dollars: the cap the Control
+        # Center chose from the repository's agent budget. The driver hands it to the model runtime,
+        # which stops a session once a turn ends over it; the driver keeps what was recorded. Data,
+        # never shell: environment, checked as a number before use.
+        description: "For a model verb (fix-agent, fix-all-agent, spec-fill-descriptions, spec-implement, plugins-discover, agent), the most its model sessions may spend, in US dollars; empty for no cap."
+        required: false
+        default: ""
+        type: string
       heap_mb:
         # Only useful together with a bigger runner, for the reason above. Empty means
         # the product decides from the memory it can actually see, which is the right
@@ -212,6 +238,10 @@ jobs:
     # run would stop early or be cancelled by GitHub with its work unpublished.
     # `cloud-workflow-template.test.ts` fails the build when the two disagree.
     timeout-minutes: 60
+    # EVERY MODEL CALL SAYS WHAT IT SPENT (#2778, v88), on the stderr the Control Center is pushed, so
+    # a verb that calls a model in-process is costed like an agent driver's session.
+    env:
+      PREDICTABLE_REPORT_SPEND: "1"
 
     steps:
       # WHEN THIS JOB STARTED, before anything else spends its hour (#2264). A description run
@@ -222,6 +252,12 @@ jobs:
         run: |
           set -euo pipefail
           echo "PC_JOB_STARTED=$(date +%s)" >> "$GITHUB_ENV"
+          # WHERE A LEAN PROJECT IS BUILT, named so the steps that keep it between runs can name it
+          # too: the analysis builds a Lean project with the project's own Lake in a workspace of
+          # its own (`PREDICTABLE_LEAN_WORKSPACES`), outside this checkout. Left at its default (a
+          # per-user cache directory) nothing restored it, so every run built a large Lean project
+          # from nothing and none finished.
+          echo "PREDICTABLE_LEAN_WORKSPACES=${RUNNER_TEMP}/predictable-lean-workspaces" >> "$GITHUB_ENV"
 
       # THE CLI DOWNLOADS WHILE EVERYTHING ELSE GETS READY (#2481). Every verb needs the runtime
       # package, and fetching it is network and disk the steps before the first command do not use:
@@ -458,7 +494,8 @@ jobs:
             # customer's pull request. `PREDICTABLE_CLAUDE_PLUGIN_DIR` is what stops the
             # clone happening at all.
             # A REVIEW (#2367) gets it too: the verified fix it stacks is the Fix All driver's session.
-            if [ "${PC_COMMAND}" = "fix-agent" ] || [ "${PC_COMMAND}" = "fix-all-agent" ] || [ "${PC_COMMAND}" = "spec-implement" ] || [ "${PC_COMMAND}" = "plugins-discover" ] || [ "${PC_COMMAND}" = "review" ]; then
+            # And the REPOSITORY AGENT (#2599), whose session is given the plugin to use as it needs.
+            if [ "${PC_COMMAND}" = "fix-agent" ] || [ "${PC_COMMAND}" = "fix-all-agent" ] || [ "${PC_COMMAND}" = "spec-implement" ] || [ "${PC_COMMAND}" = "plugins-discover" ] || [ "${PC_COMMAND}" = "review" ] || [ "${PC_COMMAND}" = "agent" ]; then
               PLUGIN_ROOT="${RUNNER_TEMP}/predictable-plugin"
               mkdir -p "$PLUGIN_ROOT"
               PLUGIN_RESPONSE=$(curl -sS --fail-with-body \
@@ -494,6 +531,33 @@ jobs:
           disown
           echo "The CLI is downloading in the background."
 
+      # ROOM ON THE DISK, freed while the checkout and the downloads run. A hosted runner's image
+      # carries toolchains no analysis uses (the system .NET — the analysis provisions its own —
+      # Haskell, Swift, PowerShell, CodeQL), and a large Lean project's workspace with the stores
+      # restored beside it ran four runs in five out of space (`No space left on device`). Started
+      # in the background, right after the download, and waited for before the stores are
+      # restored. Hosted runners only: a self-hosted one carries none of these. The Android SDK is
+      # KEPT: an Android project's own Gradle build below needs it.
+      - name: Free the runner's disk
+        if: runner.os == 'Linux' && runner.environment == 'github-hosted'
+        run: |
+          set -euo pipefail
+          df -h / | tail -1
+          PC_DISK="${RUNNER_TEMP}/pc-disk"
+          rm -rf "$PC_DISK" && mkdir -p "$PC_DISK"
+          # The marker is written whatever `rm` returns, so the wait can never hang on a failed
+          # deletion; the free space it reports afterwards is the evidence.
+          {
+            set +e
+            sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL \
+              /usr/share/swift /usr/local/share/powershell
+            echo "rm exited $?"
+            touch "$PC_DISK/freed"
+          } > "$PC_DISK/log" 2>&1 < /dev/null &
+          # Detached from this step's shell, which exits now; the runner reaps it at the job's end.
+          disown
+          echo "freeing the runner's disk in the background"
+
       - uses: actions/checkout@v6
         with:
           # Full history: the analysis records which commit it describes, and a shallow
@@ -521,7 +585,7 @@ jobs:
         #
         # THE SAME VERBS AS THE KEY CHECK — the ones that spawn an engine (see below). It reads no
         # secret: which engine a repository chose is in its own file.
-        if: inputs.command == 'fix' || inputs.command == 'fix-agent' || inputs.command == 'fix-all-agent' || inputs.command == 'spec-generate' || inputs.command == 'spec-fill-descriptions' || inputs.command == 'spec-implement' || inputs.command == 'plugins-discover'
+        if: inputs.command == 'fix' || inputs.command == 'fix-agent' || inputs.command == 'fix-all-agent' || inputs.command == 'spec-generate' || inputs.command == 'spec-fill-descriptions' || inputs.command == 'spec-implement' || inputs.command == 'plugins-discover' || inputs.command == 'agent'
         env:
           # Which verb is asking: a generation asks the INFERENCE engine, a fix the main one,
           # and the refusal names the verb.
@@ -626,7 +690,7 @@ jobs:
         # AND `spec-fill-descriptions` (#2103), which asks the inference engine for every
         # description it writes.
         # AND `spec-implement` (#2339), an agent session like a fix.
-        if: inputs.command == 'fix' || inputs.command == 'fix-agent' || inputs.command == 'fix-all-agent' || inputs.command == 'spec-generate' || inputs.command == 'spec-fill-descriptions' || inputs.command == 'spec-implement' || inputs.command == 'plugins-discover'
+        if: inputs.command == 'fix' || inputs.command == 'fix-agent' || inputs.command == 'fix-all-agent' || inputs.command == 'spec-generate' || inputs.command == 'spec-fill-descriptions' || inputs.command == 'spec-implement' || inputs.command == 'plugins-discover' || inputs.command == 'agent'
         env:
           # NOT CONFIGURED BY US AND NOT REQUIRED OF ANYONE ELSE: this is the one
           # secret the workflow reads, it is the customer's own, and it is read only on
@@ -707,6 +771,10 @@ jobs:
                 echo 'Implementing a spec runs an agent on this runner, so it needs a model key that belongs to you. Set a secret named `ANTHROPIC_API_KEY` that this repository can see — either on the repository (Settings -> Secrets and variables -> Actions) or on the organisation, shared with this repository — and try again. A secret named `ORG_ANTHROPIC_KEY` is read as well.'
                 echo
                 echo 'The spec itself is already proposed; ANALYSIS needs no key.'
+              elif [ "${PC_COMMAND}" = "agent" ]; then
+                echo 'The repository agent runs on this runner, so it needs a model key that belongs to you. Set a secret named `ANTHROPIC_API_KEY` that this repository can see — either on the repository (Settings -> Secrets and variables -> Actions) or on the organisation, shared with this repository. A secret named `ORG_ANTHROPIC_KEY` is read as well.'
+                echo
+                echo 'ANALYSIS needs no key; the agent does, for every event it reacts to.'
               elif [ "${PC_COMMAND}" = "plugins-discover" ]; then
                 echo 'Looking for what Predictable misses runs an agent on this runner, so it needs a model key that belongs to you. Set a secret named `ANTHROPIC_API_KEY` that this repository can see — either on the repository (Settings -> Secrets and variables -> Actions) or on the organisation, shared with this repository — and try again. A secret named `ORG_ANTHROPIC_KEY` is read as well.'
                 echo
@@ -739,7 +807,7 @@ jobs:
       # its install fetches from the registry instead.
       - name: Restore the dependency stores
         id: depcache
-        if: contains(fromJSON('["sync","fix","fix-agent","fix-all-agent","spec-implement","plugins-discover","review"]'), inputs.command)
+        if: contains(fromJSON('["sync","fix","fix-agent","fix-all-agent","autofix","spec-implement","plugins-discover","review","agent"]'), inputs.command)
         uses: actions/cache/restore@v5
         with:
           path: |
@@ -857,8 +925,10 @@ jobs:
             fi
             ENGINE=$(printf '%s' "${ENGINE}" | tr -cd 'A-Za-z0-9')
           fi
+          # `spec-describe` (#2563): an edit of a spec whose requirements were derived from its
+          # description derives them again with the inference adapter's `claude`, as a generation does.
           case "${PC_COMMAND}" in
-            fix|fix-agent|fix-all-agent|spec-generate|spec-fill-descriptions|spec-implement|plugins-discover|review)
+            fix|fix-agent|fix-all-agent|spec-generate|spec-fill-descriptions|spec-implement|plugins-discover|review|spec-describe|agent)
               case "${ENGINE}" in
                 opencodeCli) tools+=("aqua:anomalyco/opencode") ;;
                 copilotCli) ;;
@@ -951,7 +1021,7 @@ jobs:
           # over a stale analysis, and none over no analysis at all.
           PC_REPUBLISH=""
           if [ "${PC_COMMAND:-sync}" = "republish" ]; then
-            if [ -n "${EXPECTED:-}" ] && [ "$FOUND" = "${EXPECTED}" ] && [ -f "$STATE/viewer-data.json" ]; then
+            if [ -n "${EXPECTED:-}" ] && [ "$FOUND" = "${EXPECTED}" ] && [ -f "$STATE/specs/.data/summary.json" ]; then
               PC_REPUBLISH=compile
             else
               echo "::notice::the analysis of ${GITHUB_REF_NAME} was not written by this build (found '${FOUND:-none}', expected '${EXPECTED:-unknown}'), so it cannot be republished; this run analyses the branch instead"
@@ -995,7 +1065,7 @@ jobs:
         # token the agent can print. This step launches no agent — it runs `specs details` and
         # `gh pr list` — so the job's own token is safe here.
         id: spec
-        if: inputs.command == 'spec-new' || inputs.command == 'spec-describe' || inputs.command == 'requirement-add' || inputs.command == 'requirement-update' || inputs.command == 'requirement-remove' || inputs.command == 'spec-generate' || inputs.command == 'spec-fill-descriptions' || inputs.command == 'spec-implement' || inputs.command == 'fix' || inputs.command == 'fix-agent' || inputs.command == 'fix-all-agent'
+        if: inputs.command == 'spec-new' || inputs.command == 'spec-describe' || inputs.command == 'requirement-add' || inputs.command == 'requirement-update' || inputs.command == 'requirement-remove' || inputs.command == 'spec-generate' || inputs.command == 'spec-fill-descriptions' || inputs.command == 'spec-implement' || inputs.command == 'fix' || inputs.command == 'fix-agent' || inputs.command == 'fix-all-agent' || inputs.command == 'autofix'
         env:
           PC_HOME: ${{ steps.toolchain.outputs.predictable_home }}
           PC_COMMAND: ${{ inputs.command }}
@@ -1194,6 +1264,15 @@ jobs:
               [ "${#PC_TARGET}" -le 12 ] || { echo "::error::'${PC_TARGET}' is not a batch id"; exit 1; }
               FIX_BRANCH="predictable/fix-all/${PC_TARGET}"
               ;;
+            # AUTOFIX (#2585): the batch the Control Center wrote (`.autofix/<id>.json`), held to the
+            # same id rule as a Fix All batch, on its own branch.
+            autofix)
+              case "${PC_TARGET}" in
+                ''|-*|*[!A-Za-z0-9-]*) echo "::error::'${PC_TARGET}' is not a batch id"; exit 1 ;;
+              esac
+              [ "${#PC_TARGET}" -le 12 ] || { echo "::error::'${PC_TARGET}' is not a batch id"; exit 1; }
+              FIX_BRANCH="predictable/autofix/${PC_TARGET}"
+              ;;
           esac
           # A BATCH CONTINUES ITS OWN BRANCH: the commits on it are the ones its gate verified, and
           # its first commit carries `Predictable-Fix-Batch: <id>`. Decided by that stamp, never by
@@ -1250,6 +1329,67 @@ jobs:
       # stores live in `verification/`, which the database does not carry, so without this every
       # hosted run started cold: umami's front end and its 82 witness modules, every push. This
       # branch's newest first, then the newest of any branch (a new branch starts from its base).
+      # THE SOURCES A GRADLE BUILD GENERATES (#2515). A build can write sources the code compiles
+      # against (Hubdle's `<Module>ProjectData` under `build/generated/`), and a fresh checkout has
+      # none: on Bridge every module using one compiled to nothing, 1 file of 6 translated, the
+      # analysis was degraded and not published. The project's own Gradle compiles its main source
+      # sets here first (`classes`, which runs every task the build declares as a source producer
+      # before it), so those sources exist when the analysis reads the project, as on a developer's
+      # machine that has built. BEST-EFFORT: a build that does not finish costs only the files that
+      # needed what it would have generated, and they are reported not translated with their
+      # reason; the analysis never fails for it. The pinned Java is the one the analysis uses.
+      - name: Build the sources the project generates
+        if: ${{ hashFiles('gradlew') != '' }}
+        continue-on-error: true
+        timeout-minutes: 20
+        env:
+          PC_HOME: ${{ steps.toolchain.outputs.predictable_home }}
+        run: |
+          set -euo pipefail
+          PREDICTABLE_HOME="$PC_HOME" "$PC_HOME/provision.sh" install kotlin >/dev/null 2>&1 || true
+          eval "$(PREDICTABLE_HOME="$PC_HOME" "$PC_HOME/provision.sh" env -s bash 2>/dev/null)" || true
+          chmod +x ./gradlew
+          # THE PROJECT'S OWN BUILD RUNS WITH NOTHING OF THIS JOB'S: any plugin or task in the
+          # checked-out tree runs here (a same-repository pull request's head under `review`), and
+          # this job holds `contents: write` and `id-token: write`. Withheld, as the Rust resolver
+          # withholds them from cargo: the job's environment (the OIDC request token and URL the
+          # plane trusts for a review's results, the runtime token), the runner's HOME, and the
+          # write token `actions/checkout` persisted into this checkout's git configuration, which
+          # is restored when the build ends, however it ends.
+          pc_creds="$(mktemp -d)"
+          git config --local --get-regexp '^http\..*\.extraheader$' > "$pc_creds/headers" 2>/dev/null || true
+          git config --local --get-regexp '^includeif\..*\.path$' > "$pc_creds/includes" 2>/dev/null || true
+          pc_restore() {
+            while IFS=' ' read -r key value; do
+              [ -n "$key" ] && git config --local --add "$key" "$value"
+            done < "$pc_creds/headers"
+            while IFS=' ' read -r key value; do
+              [ -n "$key" ] || continue
+              n="$(basename "$value")"
+              [ -f "$pc_creds/$n" ] && mv "$pc_creds/$n" "$value"
+              git config --local --add "$key" "$value"
+            done < "$pc_creds/includes"
+            rm -rf "$pc_creds"
+          }
+          trap pc_restore EXIT
+          while IFS=' ' read -r key value; do
+            [ -n "$key" ] && git config --local --unset-all "$key"
+          done < "$pc_creds/headers"
+          while IFS=' ' read -r key value; do
+            [ -n "$key" ] || continue
+            git config --local --unset-all "$key"
+            [ -f "$value" ] && mv "$value" "$pc_creds/$(basename "$value")"
+          done < "$pc_creds/includes"
+          pc_home="$(mktemp -d)"
+          if env -i PATH="$PATH" JAVA_HOME="${JAVA_HOME:-}" HOME="$pc_home" \
+              GRADLE_USER_HOME="$pc_home/.gradle" LANG=C.UTF-8 TERM=dumb CI=true \
+              ./gradlew classes --continue --console=plain -q --no-configuration-cache; then
+            echo "The project's own Gradle build compiled its main source sets, so the sources it generates exist."
+          else
+            echo "::warning::the project's own Gradle build did not finish (classes); any source it generates is missing, and the files that use one are reported not translated"
+          fi
+          rm -rf "$pc_home"
+
       - name: Restore what the last analysis can reuse
         uses: actions/cache/restore@v5
         with:
@@ -1262,20 +1402,52 @@ jobs:
             predictable-reuse-${{ github.ref_name }}-
             predictable-reuse-
 
-      # THE LEAN MIRROR'S BUILD, in an entry of its own named by its CONTENT (the hash of its
-      # traces): about a gigabyte on a large Lean project, so kept beside the reuse stores under
-      # their per-run key it was written again by every run, and a few branches evicted each other
-      # from the repository's cache. Lake's traces are content hashes, so a build from an older tree
-      # or another branch is never wrong, only rebuilt where it differs.
-      - name: Restore the Lean mirror's build
-        id: leanbuild
+      - name: Wait for the runner's disk
+        if: runner.os == 'Linux' && runner.environment == 'github-hosted'
+        run: |
+          set -euo pipefail
+          PC_DISK="${RUNNER_TEMP}/pc-disk"
+          if [ ! -d "$PC_DISK" ]; then echo "no cleanup was started; nothing to wait for"; exit 0; fi
+          waited=0
+          until [ -f "$PC_DISK/freed" ] || [ "$waited" -ge 180 ]; do sleep 2; waited=$((waited + 2)); done
+          # Never a failure: a cleanup that did not finish costs room, not the analysis.
+          echo "waited ${waited}s for the cleanup: $(cat "$PC_DISK/log" 2>/dev/null || true)"
+          df -h / | tail -1
+
+      # THE LEAN PROJECTS' WORKSPACES, where the analysis builds a Lean project with its own Lake
+      # (`PREDICTABLE_LEAN_WORKSPACES`): the staged sources and their build, in an entry named by
+      # what the build HOLDS (the hash of Lake's traces, `Name the Lean workspaces` below), so a run
+      # that built nothing new saves nothing and one that built more — a run stopped at its time
+      # bound included — saves a newer entry the next run restores and continues from. Lake's
+      # traces are content hashes, so a build from an older tree or another branch is never wrong,
+      # only rebuilt where it differs; the staged sources keep their times, so a module whose
+      # source did not change is not taken for stale.
+      #
+      # The dependencies are an entry of their own (`.lake/packages`), named by the manifests and
+      # toolchains that pin them, so a change to the project does not upload them again. At ANY
+      # depth (`**`, v85): a workspace is laid out as its repository, so a project in a
+      # subdirectory has its `.lake/` below the workspace's root.
+      - name: Restore the Lean workspaces
+        id: leanws
         uses: actions/cache/restore@v5
         with:
-          path: .predictable-code/${{ github.ref_name }}/.predictable-code/verification/.lake/build
-          key: predictable-lean-build-${{ github.ref_name }}-
+          path: |
+            ${{ runner.temp }}/predictable-lean-workspaces
+            !${{ runner.temp }}/predictable-lean-workspaces/**/.lake/packages
+          key: predictable-lean-ws-${{ github.ref_name }}-
           restore-keys: |
-            predictable-lean-build-${{ github.ref_name }}-
-            predictable-lean-build-
+            predictable-lean-ws-${{ github.ref_name }}-
+            predictable-lean-ws-
+
+      - name: Restore the Lean dependencies
+        id: leanpkgs
+        uses: actions/cache/restore@v5
+        with:
+          path: ${{ runner.temp }}/predictable-lean-workspaces/**/.lake/packages
+          key: predictable-lean-pkgs-${{ hashFiles('**/lake-manifest.json', '**/lean-toolchain', '!.predictable-code/**', '!**/node_modules/**') }}-
+          restore-keys: |
+            predictable-lean-pkgs-${{ hashFiles('**/lake-manifest.json', '**/lean-toolchain', '!.predictable-code/**', '!**/node_modules/**') }}-
+            predictable-lean-pkgs-
 
       - name: Run
         id: analyse
@@ -1289,6 +1461,8 @@ jobs:
           # When the job started (#2264), noted by its first step: a description run's time bound
           # is derived from it.
           PC_JOB_STARTED: ${{ env.PC_JOB_STARTED }}
+          # Where a Lean project is built (v82), noted by the first step and kept by the cache steps.
+          PREDICTABLE_LEAN_WORKSPACES: ${{ env.PREDICTABLE_LEAN_WORKSPACES }}
           # Through the ENVIRONMENT, never interpolated into the script. A
           # `${{ inputs.target }}` spliced into shell is an injection site, and this
           # input reaches us from an API call. The PROMPT is free-form prose and is the
@@ -1304,6 +1478,8 @@ jobs:
           # this run continues work an earlier run of the same attempt pushed.
           PC_FINDING: ${{ inputs.finding }}
           PC_FIX_WIP: ${{ steps.spec.outputs.fix_wip }}
+          # The cap on this run's model sessions (#2778), through the environment like every input.
+          PC_BUDGET_USD: ${{ inputs.budget_usd }}
           # Where the plugin was unpacked. Set for every verb and used by one: the CLI
           # reads it instead of cloning, and an empty value simply means the CLI's own
           # default applies, which is right for the verbs that never launch an agent.
@@ -1324,10 +1500,13 @@ jobs:
           # `a && b || ''` is the expression language's conditional; with no secret set, `b` is
           # empty and the result is '' either way.
           #
-          # AND THE PULL REQUEST REVIEW (#2367), which is the one verb handed the key without being
-          # refused for its absence: the analysis alone decides its check, and the key only lets it
-          # explain what it found and stack a verified fix (`readsModelKey` in the Control Center).
-          ANTHROPIC_API_KEY: ${{ contains(fromJSON('["fix","fix-agent","fix-all-agent","spec-generate","spec-fill-descriptions","spec-implement","plugins-discover","review"]'), inputs.command) && (secrets.ANTHROPIC_API_KEY || secrets.ORG_ANTHROPIC_KEY) || '' }}
+          # AND THE PULL REQUEST REVIEW (#2367), which is handed the key without being refused for
+          # its absence: the analysis alone decides its check, and the key only lets it explain what
+          # it found and stack a verified fix (`readsModelKey` in the Control Center). And
+          # `spec-describe` (#2563) the same way: an edit of a spec whose requirements were derived
+          # from its description derives them again with a model, and one of a spec nothing was
+          # derived for asks none — so it is handed the key and never refused before it runs.
+          ANTHROPIC_API_KEY: ${{ contains(fromJSON('["fix","fix-agent","fix-all-agent","spec-generate","spec-fill-descriptions","spec-implement","plugins-discover","review","spec-describe","agent"]'), inputs.command) && (secrets.ANTHROPIC_API_KEY || secrets.ORG_ANTHROPIC_KEY) || '' }}
           # Empty is NOT the same as unset for this knob: the product reads the variable
           # and an empty string is not a number, so it falls back to measured headroom —
           # which is what an empty input should mean.
@@ -1338,8 +1517,23 @@ jobs:
           PREDICTABLE_ANALYSIS_STARTED_BY: ${{ inputs.started_by }}
           PREDICTABLE_ANALYSIS_ORIGIN: ${{ inputs.started_by != '' && 'control-center' || 'automatic' }}
           PREDICTABLE_ANALYSIS_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          # THE JOB'S WRITE TOKEN, FOR THE AGENT VERB ONLY (v78): the loop beside the agent's session
+          # pushes each proposal and opens its pull request as soon as the session records it, so a
+          # session the job's time cuts short has still opened what it proposed. Unset in the
+          # session's own environment (below); `''` for every other verb.
+          PC_AGENT_PUSH_TOKEN: ${{ inputs.command == 'agent' && github.token || '' }}
         run: |
           set -euo pipefail
+          # THE CAP ON A MODEL VERB'S SESSIONS (#2778): handed to every agent driver below as
+          # `--max-budget-usd`. Empty is no cap; anything but a positive figure is refused here.
+          PC_BUDGET_ARGS=()
+          if [ -n "${PC_BUDGET_USD:-}" ]; then
+            if ! [[ "$PC_BUDGET_USD" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
+              echo "::error::budget_usd must be a figure in US dollars, not '${PC_BUDGET_USD}'"
+              exit 1
+            fi
+            PC_BUDGET_ARGS=(--max-budget-usd "$PC_BUDGET_USD")
+          fi
           # THE LAUNCHER, never the binary directly. `launcher.sh` is what puts the
           # provisioned toolchain on PATH — running the raw binary is how a `lake` or a
           # `lean` spawn resolves to whatever the runner had, or to nothing.
@@ -1353,6 +1547,244 @@ jobs:
             predictable init "${GITHUB_REPOSITORY##*/}" \
               --path "$PWD/.predictable-code" --accept-config-suggestions
           fi
+
+          # ──────────────────────────────────────────────────────────────────────────
+          # THE PROPOSE HELPERS, written for this step and the Propose step to source, so a branch is
+          # pushed and a pull request opened by the SAME functions wherever it happens: the agent verb
+          # opens each proposal WHILE its session runs (below), and the Propose step everything else.
+          # Quoted heredoc: nothing in it is expanded here. Written to the runner's temporary
+          # directory, beside the runtime package the Propose step already runs (`launcher.sh`): the
+          # agent's session shares this uid and could rewrite either, which is why the session holds
+          # no credential of its own to act with — see "THE AGENT'S SESSION HOLDS NOTHING" below.
+          # ──────────────────────────────────────────────────────────────────────────
+          cat > "${RUNNER_TEMP}/pc-propose-helpers.sh" <<'PC_PROPOSE_HELPERS'
+          # WHY A PUSH IS WRAPPED AT ALL. A run can do every piece of work correctly and
+          # then lose all of it at this line, and git's own message does not say why.
+          # MEASURED: an analysis of `defuncto-predictable` translated 31 of 31 files,
+          # analysed them, inferred requirements — and ended with
+          #
+          #   ! [remote rejected] predictable/analysis-35549208032
+          #     (refusing to allow a GitHub App to create or update workflow
+          #      `.github/workflows/predictable-sync.yml`)
+          #
+          # because the Predictable workflow update had been merged WHILE the run was in
+          # flight. The run had checked the older commit out, so its branch carries the
+          # older workflow file, and once the default branch moved GitHub reads the push
+          # as an App updating a workflow — which this token may not do.
+          #
+          # The remedy is the customer's and it is one sentence long, so it is said here
+          # rather than left as a git error in a log nobody reads. NOT auto-repaired:
+          # rebasing the results onto the moved tip would make the analysis describe a
+          # commit its branch is not based on, and that is a product decision rather
+          # than a repair.
+          push_or_explain() {
+            # Extra push flags, if any, come first: only the authored-spec and fix paths pass one
+            # (`--force-with-lease`, below); every other caller pushes exactly as before.
+            if git push "$@" origin "$BRANCH" 2> "${RUNNER_TEMP}/pc-push.err"; then
+              cat "${RUNNER_TEMP}/pc-push.err" >&2
+              return 0
+            fi
+            cat "${RUNNER_TEMP}/pc-push.err" >&2
+            if grep -q "create or update workflow" "${RUNNER_TEMP}/pc-push.err"; then
+              echo "::error::this run started from an older commit, and the Predictable workflow was updated on ${GITHUB_REF_NAME} while it ran; nothing is wrong with what it wrote, but it cannot be pushed from a branch carrying the older workflow file — re-run it and it will push"
+              {
+                echo "### What this run wrote could not be pushed"
+                echo
+                echo "This run started before the Predictable workflow on \`${GITHUB_REF_NAME}\` was updated, so its branch carries the older copy of \`.github/workflows/predictable-sync.yml\`. GitHub refuses a push from an app that would change a workflow file, which is the right rule and is why this stopped here."
+                echo
+                # Said of what the run WROTE: only a fix and an authored spec push a branch now, an
+                # analysis is a commit on predictable-code-database and never comes through here.
+                echo '**Nothing is wrong with what this run wrote.** Run it again and it will push.'
+              } >> "$GITHUB_STEP_SUMMARY"
+            fi
+            return 1
+          }
+
+          # THE CONTROL PLANE OPENS THE PULL REQUEST, with the App's installation token.
+          #
+          # A pull request this job opens with its own GITHUB_TOKEN starts NO workflow run:
+          # that is GitHub's rule for every event the token causes. So the repository's own
+          # CI never ran on our pull requests, the Control Center had no checks to show, and
+          # a base that requires checks could never merge one. Opened by the plane, CI runs
+          # as on any other pull request, and the plane records it and arms the auto-merge
+          # choice of whoever started this run.
+          #
+          # IT FALLS BACK to opening it here when the plane cannot be reached or refuses, so
+          # a run never loses its results over it, and it says so: without the plane, this
+          # repository's CI will not run on the pull request until something pushes to it.
+          open_pull_request() {
+            PC_PR_HEAD="$1"
+            PC_PR_TITLE="$2"
+            PC_PR_BODY="$3"
+            # `$4` is the pull request's MODE, at most one: `draft` — a Fix All Defects batch's pull
+            # request opens before its work is done (#2313) — or `hold`, which asks the plane NOT to
+            # merge it on its own (#2307) and can only withdraw the auto-merge its opener chose,
+            # never arm one.
+            PC_PR_DRAFT=""
+            PC_PR_HOLD=false
+            # `$5` and `$6` (v83, #2691): ANOTHER REPOSITORY an organisation session watches, and its
+            # default branch — opened by the plane alone, for this run's own branch there.
+            PC_PR_REPO="${5:-}"
+            PC_PR_BASE="${6:-${GITHUB_REF_NAME}}"
+            case "${4:-}" in
+              draft) PC_PR_DRAFT=draft ;;
+              hold) PC_PR_HOLD=true ;;
+            esac
+            # No plane named, or no way to mint a token (a run started by hand from GitHub's own
+            # UI can lack either): straight to the fallback rather than an unbound variable.
+            PC_PR_OIDC=""
+            if [ -n "${CONTROL_PLANE:-}" ] && [ -n "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" ]; then
+              PC_PR_OIDC=$(curl -sS -m 20 \
+                -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN:-}" \
+                "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${CONTROL_PLANE}" \
+                | jq -r '.value // empty') || PC_PR_OIDC=""
+            fi
+            if [ -n "$PC_PR_OIDC" ]; then
+              # BASED ON THE BRANCH THIS RAN ON: a fix or a spec of `feature/x` belongs on
+              # `feature/x`, not on the default branch with every commit of `feature/x` beside it.
+              jq -n --arg head "$PC_PR_HEAD" --arg base "$PC_PR_BASE" \
+                --arg title "$PC_PR_TITLE" --rawfile body "$PC_PR_BODY" --arg draft "$PC_PR_DRAFT" \
+                --argjson hold "$PC_PR_HOLD" --arg repo "$PC_PR_REPO" --arg run "${PC_TARGET:-}" \
+                '{head: $head, base: $base, title: $title, body: $body, draft: ($draft == "draft"), holdAutoMerge: $hold}
+                 + (if $repo == "" then {} else {repo: $repo, agentRun: $run} end)' \
+                > "${RUNNER_TEMP}/pc-pr-request.json"
+              PC_PR_STATUS=$(curl -sS -m 60 -o "${RUNNER_TEMP}/pc-pr-answer.json" -w '%{http_code}' \
+                -X POST \
+                -H "Authorization: Bearer ${PC_PR_OIDC}" \
+                -H 'content-type: application/json' \
+                --data-binary "@${RUNNER_TEMP}/pc-pr-request.json" \
+                "${CONTROL_PLANE}/api/cloud/pull-requests") || PC_PR_STATUS=000
+              if [ "$PC_PR_STATUS" = "201" ] || [ "$PC_PR_STATUS" = "200" ]; then
+                echo "Opened $(jq -r '.url // "the pull request"' "${RUNNER_TEMP}/pc-pr-answer.json")"
+                return 0
+              fi
+              echo "::warning::the control plane did not open the pull request (HTTP ${PC_PR_STATUS}): $(head -c 300 "${RUNNER_TEMP}/pc-pr-answer.json" 2>/dev/null)"
+            fi
+            # THIS JOB'S TOKEN REACHES ITS OWN REPOSITORY ALONE, so another repository's pull request
+            # has no fallback: it was pushed, and the plane must open it.
+            [ -z "$PC_PR_REPO" ] || return 1
+            echo "::warning::opening the pull request with this job's own token, so this repository's CI will not run on it until something pushes to it"
+            # A HOLD SURVIVES THE FALLBACK (#2307): no plane applied it, so the job writes the
+            # auto-merge marker itself, OFF — which only withdraws (the plane honours an intent
+            # marker on a pull request a bot opened, and adopts it rather than its own setting).
+            if [ "$PC_PR_HOLD" = true ]; then
+              printf '\n\n<!-- predictable-code:auto-merge off method=squash -->\n' >> "$PC_PR_BODY"
+            fi
+            PC_PR_DRAFT_FLAG=""
+            [ "$PC_PR_DRAFT" = "draft" ] && PC_PR_DRAFT_FLAG="--draft"
+            # shellcheck disable=SC2086
+            gh pr create $PC_PR_DRAFT_FLAG \
+              --title "$PC_PR_TITLE" \
+              --body-file "$PC_PR_BODY" \
+              --head "$PC_PR_HEAD" \
+              --base "${GITHUB_REF_NAME}"
+          }
+
+          # ONE AGENT PROPOSAL, PUSHED AND OPENED (#2599), by the ONE rule both of its openers use —
+          # the Run step's loop beside the session, which opens each proposal as soon as it is recorded
+          # (v78), and the Propose step, which opens what is left when the session ends. `$1` the
+          # branch, `$2` the title, `$3` a file holding the description, `$4` the file the opened pull
+          # request's row is appended to (`{number, url, title, branch}`), `$5` the file a reason it
+          # was not opened is appended to. A NEW branch under this run's own prefix only, checked here
+          # too: the driver holds the reply to it, and this does not rely on the driver alone.
+          open_agent_proposal() {
+            BRANCH="$1"
+            case "$BRANCH" in
+              "predictable/agent/${PC_TARGET}/"*) ;;
+              *)
+                echo "the proposal ${BRANCH} is not under predictable/agent/${PC_TARGET}/" >> "$5"
+                return 1
+              ;;
+            esac
+            # ANOTHER REPOSITORY OF AN ORGANISATION SESSION (v83, #2691): `$6` names it, its branch
+            # is in its own checkout (`pc_org_checkouts`), pushed with the token the plane scoped to
+            # the watched repositories and opened by the plane alone.
+            if [ -n "${6:-}" ] && [ "${6}" != "${GITHUB_REPOSITORY}" ]; then
+              PC_AP_DIR="${PC_ORG_DIR}/${6}"
+              if [ ! -d "$PC_AP_DIR/.git" ]; then
+                echo "the proposal ${BRANCH} is in ${6}, which this run did not check out" >> "$5"
+                return 1
+              fi
+              if ! git -C "$PC_AP_DIR" rev-parse --verify --quiet "refs/heads/${BRANCH}" >/dev/null; then
+                echo "the proposal ${BRANCH} in ${6} was named but never committed" >> "$5"
+                return 1
+              fi
+              PC_AP_BASE=$(git -C "$PC_AP_DIR" rev-parse --abbrev-ref origin/HEAD | sed 's|^origin/||')
+              if [ "$(git -C "$PC_AP_DIR" rev-list --count "origin/HEAD..${BRANCH}")" = "0" ]; then
+                echo "the proposal ${BRANCH} in ${6} has no commit beyond ${PC_AP_BASE}" >> "$5"
+                return 1
+              fi
+              if [ -z "${PC_ORG_TOKEN:-}" ] && ! pc_org_token; then
+                echo "the proposal ${BRANCH} in ${6} could not be pushed: no token for the watched repositories" >> "$5"
+                return 1
+              fi
+              # The header is the ONLY one on this push and never on argv: `GIT_CONFIG_*` REPLACES
+              # whatever the caller set (a second `extraheader` is a second `Authorization`, which
+              # GitHub refuses as a duplicate header), and a process's command line is readable by
+              # anything running as this uid.
+              if ! GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0="http.https://github.com/.extraheader" \
+                  GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$PC_ORG_TOKEN" | base64 | tr -d '\n')" \
+                  git -C "$PC_AP_DIR" push origin "refs/heads/${BRANCH}:refs/heads/${BRANCH}"; then
+                echo "the proposal ${BRANCH} in ${6} could not be pushed" >> "$5"
+                return 1
+              fi
+              PC_AP_OPENED=$(open_pull_request "$BRANCH" "$2" "$3" "" "${6}" "$PC_AP_BASE" || true)
+              printf '%s\n' "$PC_AP_OPENED"
+              PC_AP_URL=$(printf '%s\n' "$PC_AP_OPENED" | grep -o 'https://[^ ]*/pull/[0-9][0-9]*' | tail -n 1 || true)
+              PC_AP_NUMBER=$(printf '%s' "$PC_AP_URL" | sed -n 's|.*/pull/\([0-9][0-9]*\)$|\1|p')
+              if [ -z "$PC_AP_NUMBER" ]; then
+                echo "the proposal ${BRANCH} in ${6} was pushed and its pull request could not be opened" >> "$5"
+                return 1
+              fi
+              jq -nc --arg number "$PC_AP_NUMBER" --arg url "$PC_AP_URL" --arg title "$2" \
+                --arg branch "$BRANCH" --arg repo "${6}" \
+                '{number: ($number | tonumber), url: $url, title: $title, branch: $branch, repo: $repo}' >> "$4"
+              return 0
+            fi
+            if ! git rev-parse --verify --quiet "refs/heads/${BRANCH}" >/dev/null; then
+              echo "the proposal ${BRANCH} was named but never committed" >> "$5"
+              return 1
+            fi
+            if [ "$(git rev-list --count "${GITHUB_SHA}..${BRANCH}")" = "0" ]; then
+              echo "the proposal ${BRANCH} has no commit beyond ${GITHUB_REF_NAME}" >> "$5"
+              return 1
+            fi
+            if ! push_or_explain; then
+              echo "the proposal ${BRANCH} could not be pushed" >> "$5"
+              return 1
+            fi
+            PC_AP_OPENED=$(open_pull_request "$BRANCH" "$2" "$3" || true)
+            printf '%s\n' "$PC_AP_OPENED"
+            PC_AP_URL=$(printf '%s\n' "$PC_AP_OPENED" | grep -o 'https://[^ ]*/pull/[0-9][0-9]*' | tail -n 1 || true)
+            PC_AP_NUMBER=$(printf '%s' "$PC_AP_URL" | sed -n 's|.*/pull/\([0-9][0-9]*\)$|\1|p')
+            if [ -z "$PC_AP_NUMBER" ]; then
+              echo "the proposal ${BRANCH} was pushed and its pull request could not be opened" >> "$5"
+              return 1
+            fi
+            jq -nc --arg number "$PC_AP_NUMBER" --arg url "$PC_AP_URL" --arg title "$2" --arg branch "$BRANCH" \
+              '{number: ($number | tonumber), url: $url, title: $title, branch: $branch}' >> "$4"
+          }
+
+          # AN ORGANISATION SESSION'S TOKEN (v83, #2691): minted by the plane for THIS run, scoped to
+          # its watched repositories and to `contents: write` alone, asked with this job's OIDC token.
+          # Held in this shell's `PC_ORG_TOKEN`, never in a checkout's configuration and never in the
+          # session's environment.
+          pc_org_token() {
+            [ -n "${CONTROL_PLANE:-}" ] && [ -n "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" ] || return 1
+            PC_ORG_OIDC=$(curl -sS -m 20 \
+              -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN:-}" \
+              "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${CONTROL_PLANE}" \
+              | jq -r '.value // empty') || return 1
+            [ -n "$PC_ORG_OIDC" ] || return 1
+            PC_ORG_TOKEN=$(jq -n --arg run "${PC_TARGET}" '{run: $run}' \
+              | curl -sS -m 30 -X POST -H "Authorization: Bearer ${PC_ORG_OIDC}" \
+                  -H 'content-type: application/json' --data-binary @- \
+                  "${CONTROL_PLANE}/api/cloud/org-token" | jq -r '.token // empty') || return 1
+            [ -n "$PC_ORG_TOKEN" ]
+          }
+          PC_ORG_DIR="${RUNNER_TEMP}/pc-org"
+          PC_PROPOSE_HELPERS
+          . "${RUNNER_TEMP}/pc-propose-helpers.sh"
 
           # ──────────────────────────────────────────────────────────────────────────
           # REPORTING PROGRESS WHILE IT HAPPENS, not after.
@@ -1394,6 +1826,16 @@ jobs:
           PUSH_BACKOFF_POLLS=10
           OIDC_MINTED=0
           PC_OIDC=""
+          # A PERSON'S MESSAGES TO A RUNNING AGENT (v76): the Control Center answers each push of the
+          # agent's stream with the messages queued for this run (`steer`), every one until it is
+          # acknowledged. Each new one is appended to the steer file `predictable agent run` reads
+          # into the live session, and its id is acknowledged on the next push (`steered=`), so a
+          # message reaches the agent once even when an answer is lost.
+          PC_STEER_FILE="${RUNNER_TEMP}/pc-agent-steer.ndjson"
+          PC_STEER_SEEN="${RUNNER_TEMP}/pc-agent-steer-seen.txt"
+          PC_STEER_ACK=""
+          : > "$PC_STEER_FILE"
+          : > "$PC_STEER_SEEN"
           # OUTSIDE THE CHECKOUT, for the reason the runtime package is: anything we
           # write into the tree is part of the tree as far as git is concerned. Measured
           # on this exact path — the run's ndjson was written into the working
@@ -1459,7 +1901,14 @@ jobs:
             PUSH_SENT=$_sent
             [ -f "$_file" ] || return 0
             total=$(wc -l < "$_file" | tr -d ' ')
-            [ "$total" -gt "$_sent" ] || return 0
+            # THE AGENT'S STREAM PUSHES EVEN WITH NOTHING NEW: the answer is where a person's
+            # message to the running agent arrives, and an agent deep in one long command writes
+            # nothing for minutes.
+            if [ "${PC_COMMAND:-}" = "agent" ] && [ "$_stream" = stdout ]; then
+              [ "$total" -ge "$_sent" ] || return 0
+            else
+              [ "$total" -gt "$_sent" ] || return 0
+            fi
             mint_oidc
             [ -n "$PC_OIDC" ] || return 0
             # The token is a credential, so it goes in a header from a variable and never
@@ -1504,10 +1953,27 @@ jobs:
               -H "Authorization: Bearer ${PC_OIDC}" \
               -H 'content-type: text/plain' \
               --data-binary "@${RUNNER_TEMP}/pc-batch.ndjson" \
-              "${CONTROL_PLANE}/api/cloud/progress?stream=${_stream}"; then
+              "${CONTROL_PLANE}/api/cloud/progress?stream=${_stream}${PC_STEER_ACK:+&steered=${PC_STEER_ACK}}"; then
               if jq -e '.following == true' "${RUNNER_TEMP}/pc-push-answer.json" > /dev/null 2>&1; then
                 PUSH_SENT=$total
                 PUSH_FOLLOWED=1
+                if [ "${PC_COMMAND:-}" = "agent" ] && [ "$_stream" = stdout ]; then
+                  PC_STEER_ACK=""
+                  # Each message once, by id; every id answered is acknowledged next time, a
+                  # repeat included, so the plane stops sending what this run already holds.
+                  jq -c '.steer[]? | select((.id | type) == "string" and (.text | type) == "string") | {id, text, from: (.from // "")} + (if (.answers | type) == "string" then {answers} else {} end)' \
+                    "${RUNNER_TEMP}/pc-push-answer.json" 2>/dev/null > "${RUNNER_TEMP}/pc-steer-new.ndjson" || :
+                  while IFS= read -r PC_STEER_LINE; do
+                    PC_STEER_ID=$(printf '%s' "$PC_STEER_LINE" | jq -r '.id' | tr -cd 'a-zA-Z0-9-')
+                    [ -n "$PC_STEER_ID" ] || continue
+                    if ! grep -Fxc "$PC_STEER_ID" "$PC_STEER_SEEN" >/dev/null 2>&1; then
+                      printf '%s\n' "$PC_STEER_LINE" >> "$PC_STEER_FILE"
+                      printf '%s\n' "$PC_STEER_ID" >> "$PC_STEER_SEEN"
+                    fi
+                    PC_STEER_ACK="${PC_STEER_ACK:+${PC_STEER_ACK},}${PC_STEER_ID}"
+                  done < "${RUNNER_TEMP}/pc-steer-new.ndjson"
+                  rm -f "${RUNNER_TEMP}/pc-steer-new.ndjson"
+                fi
               elif jq -e '.following == false' "${RUNNER_TEMP}/pc-push-answer.json" > /dev/null 2>&1; then
                 PUSH_REFUSED=1
               fi
@@ -1547,6 +2013,72 @@ jobs:
                 echo "::notice::the Control Center is not following this run yet, so its progress is now pushed every $((PUSH_POLL_SECONDS * PUSH_BACKOFF_POLLS)) seconds; this job's log holds all of it"
               fi
             fi
+          }
+
+          # ──────────────────────────────────────────────────────────────────────────
+          # AN AGENT'S PROPOSAL OPENS WHEN IT IS RECORDED, NOT WHEN THE SESSION ENDS (v78).
+          #
+          # MEASURED: a session made six verified fixes, recorded each with `agent propose`, and lost
+          # all six when the job's time ran out before the Propose step opened them. So `agent run`
+          # keeps its actions in a file this step names (`--actions-file`), and the wait loop below
+          # reads each NEW proposal line and pushes its branch and opens its pull request at once,
+          # through `open_agent_proposal` — the same function the Propose step opens the rest with.
+          # Each branch is tried ONCE here (`pc-agent-tried.txt`); one that did not open is left to
+          # the Propose step, which opens what this did not (`pc-agent-opened-now.ndjson`) and reports
+          # every pull request, these included, with the fixes the driver verified for it.
+          #
+          # THE CREDENTIAL lives in this shell alone: the job's token (`PC_AGENT_PUSH_TOKEN`) is unset
+          # in the session's environment, and it reaches git only through `GIT_CONFIG_*` on the push
+          # itself — never the checkout's configuration, which the session reads. The session runs as
+          # this uid, so it could read this shell's environment; that is the exposure the OIDC request
+          # token the progress pushes above use already has, and this token is scoped to this
+          # repository and expires with the job.
+          # ──────────────────────────────────────────────────────────────────────────
+          PC_AGENT_ACTIONS="${RUNNER_TEMP}/pc-agent-actions.ndjson"
+          PC_AGENT_ACTIONS_READ=0
+          : > "${RUNNER_TEMP}/pc-agent-tried.txt"
+          : > "${RUNNER_TEMP}/pc-agent-opened-now.ndjson"
+          open_new_proposals() {
+            [ "${PC_COMMAND}" = "agent" ] && [ -n "${PC_AGENT_PUSH_TOKEN:-}" ] && [ -f "$PC_AGENT_ACTIONS" ] || return 0
+            # Whole lines only: a line the driver is halfway through writing has no newline yet.
+            _total=$(wc -l < "$PC_AGENT_ACTIONS" | tr -d ' ')
+            [ "$_total" -gt "$PC_AGENT_ACTIONS_READ" ] || return 0
+            # A proposal onto the branch this ran on, its title and description bounded as the
+            # driver's hold bounds them (`holdProposals`).
+            sed -n "$((PC_AGENT_ACTIONS_READ + 1)),${_total}p;${_total}q" "$PC_AGENT_ACTIONS" \
+              | jq -cR --arg base "${GITHUB_REF_NAME}" 'fromjson? | objects
+                  | select(.kind == "proposal" and (.branch | type) == "string"
+                    and (.base == $base or (.repo | type) == "string")
+                    and (.title | type) == "string" and (.title | length) > 0 and (.title | length) <= 256
+                    and ((.body // "") | type) == "string" and ((.body // "") | length) <= 60000)
+                  | {branch, title, body: (.body // ""), repo: (.repo // "")}' > "${RUNNER_TEMP}/pc-agent-new.ndjson" || :
+            PC_AGENT_ACTIONS_READ=$_total
+            _auth=$(printf 'x-access-token:%s' "$PC_AGENT_PUSH_TOKEN" | base64 | tr -d '\n')
+            while IFS= read -r _line; do
+              _branch=$(printf '%s' "$_line" | jq -r '.branch')
+              _repo=$(printf '%s' "$_line" | jq -r '.repo')
+              # ANOTHER REPOSITORY'S proposal waits for the Propose step (#2691): pushing it needs
+              # the token scoped to every watched repository, and that token is never asked for while
+              # the session — which reads text nobody here controls — is still running.
+              [ -z "$_repo" ] || [ "$_repo" = "${GITHUB_REPOSITORY}" ] || continue
+              # A branch IN ITS REPOSITORY (#2691): an organisation session may use one name in two.
+              grep -Fxc "${_repo} ${_branch}" "${RUNNER_TEMP}/pc-agent-tried.txt" >/dev/null && continue
+              # At most ten, as the driver holds a run to.
+              [ "$(wc -l < "${RUNNER_TEMP}/pc-agent-tried.txt" | tr -d ' ')" -lt 10 ] || break
+              printf '%s\n' "${_repo} ${_branch}" >> "${RUNNER_TEMP}/pc-agent-tried.txt"
+              printf '%s' "$_line" | jq -r '.body' > "${RUNNER_TEMP}/pc-agent-body-now.md"
+              GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0="http.https://github.com/.extraheader" \
+                GIT_CONFIG_VALUE_0="AUTHORIZATION: basic ${_auth}" GH_TOKEN="$PC_AGENT_PUSH_TOKEN" \
+                open_agent_proposal "$_branch" "$(printf '%s' "$_line" | jq -r '.title')" \
+                "${RUNNER_TEMP}/pc-agent-body-now.md" "${RUNNER_TEMP}/pc-agent-opened-now.ndjson" \
+                "${RUNNER_TEMP}/pc-agent-notes-now.txt" "$_repo" < /dev/null || :
+            done < "${RUNNER_TEMP}/pc-agent-new.ndjson"
+            # The notes go to a FILE and then to stderr, never to `/dev/stderr` by path: a runner whose
+            # stderr is not a device (a pipe from the step's own redirection) answers "No such device
+            # or address", and the note — why a proposal was not opened — was lost.
+            [ -s "${RUNNER_TEMP}/pc-agent-notes-now.txt" ] && cat "${RUNNER_TEMP}/pc-agent-notes-now.txt" >&2
+            rm -f "${RUNNER_TEMP}/pc-agent-new.ndjson" "${RUNNER_TEMP}/pc-agent-body-now.md" \
+              "${RUNNER_TEMP}/pc-agent-notes-now.txt"
           }
 
           : > "$RUN_JSON"
@@ -1631,6 +2163,11 @@ jobs:
                   case "$_line" in -*|*[[:cntrl:]]*) echo "::error::invalid spec file in the selection"; exit 1 ;; esac
                 done < "${RUNNER_TEMP}/pc-selection.txt"
               fi
+              # THE AREAS MODE (#2629) is a flag value, so only its three spellings pass.
+              case "${PC_PROMPT:-}" in
+                ""|with|without|only) ;;
+                *) echo "::error::spec-fill-descriptions takes the areas mode with, without or only"; exit 1 ;;
+              esac
             elif [ "${PC_COMMAND}" = "spec-implement" ]; then
               [ -n "${PC_TARGET}" ] || {
                 echo "::error::spec-implement needs a target spec"
@@ -1769,6 +2306,10 @@ jobs:
             PC_STARTED="${PC_JOB_STARTED:-$PC_NOW}"
             FIX_DEADLINE=$(( PC_STARTED + PC_JOB_SECONDS - 900 - PC_NOW ))
             [ "$FIX_DEADLINE" -gt 300 ] || FIX_DEADLINE=300
+            # THE SECOND LINE, as for an implementation: the driver stops its own agent mid-turn at
+            # its deadline; if it is still running eight minutes before the timeout (a check that
+            # will not end), it is stopped here and the run continues in a new one.
+            PC_HARD_STOP=$(( PC_STARTED + PC_JOB_SECONDS - 480 ))
             # shellcheck disable=SC2086
             predictable fix \
               --key "${PC_FINDING}" \
@@ -1776,6 +2317,7 @@ jobs:
               --pinned \
               --permission-mode bypassPermissions \
               --deadline-seconds "$FIX_DEADLINE" $KEEP_START \
+              ${PC_BUDGET_ARGS[@]+"${PC_BUDGET_ARGS[@]}"} \
               --path "$PWD/.predictable-code" > "$AGENT_JSON" 2> "$RUN_JSON" &
           # FIX ALL DEFECTS (#2313): every defect in ONE session, from the batch the Control Center
           # wrote to `predictable-code-database` — a whole project's prompt does not fit in the
@@ -1816,12 +2358,15 @@ jobs:
                 -m "Predictable-Fix-Base: ${GITHUB_SHA}"
             fi
             echo "PC_FIX_BASE=${FIX_BASE}" >> "$GITHUB_ENV"
-            # THE BUDGET, read after the continuation's starting checks, as for a single fix.
+            # THE BUDGET, read after the continuation's starting checks, as for a single fix — and the
+            # same second line. MEASURED on a hosted Fix All: one turn of 95 steps outlasted the
+            # hour, GitHub cancelled the job, and nothing the agent verified was committed.
             PC_JOB_SECONDS=3600
             PC_NOW=$(date +%s)
             PC_STARTED="${PC_JOB_STARTED:-$PC_NOW}"
             FIX_DEADLINE=$(( PC_STARTED + PC_JOB_SECONDS - 900 - PC_NOW ))
             [ "$FIX_DEADLINE" -gt 300 ] || FIX_DEADLINE=300
+            PC_HARD_STOP=$(( PC_STARTED + PC_JOB_SECONDS - 480 ))
             # shellcheck disable=SC2086
             predictable fix \
               --together \
@@ -1830,6 +2375,7 @@ jobs:
               --pinned \
               --permission-mode bypassPermissions \
               --deadline-seconds "$FIX_DEADLINE" $KEEP_START \
+              ${PC_BUDGET_ARGS[@]+"${PC_BUDGET_ARGS[@]}"} \
               --path "$PWD/.predictable-code" > "$AGENT_JSON" 2> "$RUN_JSON" &
           # IMPLEMENTING A SPEC (#2339): `predictable implement` records where the work starts
           # (`spec-check --start`: the spec's requirements as agreed, and the project's findings),
@@ -1868,10 +2414,129 @@ jobs:
               --pinned \
               --permission-mode bypassPermissions \
               --max-seconds "$IMPLEMENT_SECONDS" \
+              ${PC_BUDGET_ARGS[@]+"${PC_BUDGET_ARGS[@]}"} \
               --path "$PWD/.predictable-code" > "$AGENT_JSON" 2> "$RUN_JSON" &
+          # THE REPOSITORY AGENT (#2599): the request is the run's record, which the Control Center
+          # wrote to the database before it dispatched this run, so nothing the event said travels on
+          # this command line. `predictable agent run` gives the session the plugin and this run's
+          # binary, relays its notices on the stream this step pushes live, and prints ONE result
+          # line holding the reply to what a run may do. ONE JOB, capped like an implementation: the
+          # driver stops its agent fifteen minutes before the hour, so the Propose step still pushes.
+          elif [ "${PC_COMMAND}" = "agent" ]; then
+            export PREDICTABLE_REPORTED_RUN=1
+            case "${PC_TARGET}" in
+              ''|*[!a-z0-9-]*)
+                echo "::error::agent needs its run's id as the target (lowercase letters, digits and dashes)"
+                exit 1
+                ;;
+            esac
+            AGENT_REQUEST="$PWD/.predictable-code/.agent/runs/${PC_TARGET}.json"
+            [ -f "$AGENT_REQUEST" ] || {
+              echo "::error::the agent run ${PC_TARGET} has no request in the database, so there is nothing to react to"
+              exit 1
+            }
+            PC_JOB_SECONDS=3600
+            PC_NOW=$(date +%s)
+            PC_STARTED="${PC_JOB_STARTED:-$PC_NOW}"
+            AGENT_SECONDS=$(( PC_STARTED + PC_JOB_SECONDS - 900 - PC_NOW ))
+            [ "$AGENT_SECONDS" -gt 300 ] || AGENT_SECONDS=300
+            PC_HARD_STOP=$(( PC_STARTED + PC_JOB_SECONDS - 480 ))
+            # THE AGENT'S OWN OPEN PULL REQUESTS ARE BRANCHES IT CAN STACK ON (F-077). The request lists
+            # them (`openPullRequests`), and a proposal whose change touches a file one of them changes
+            # is committed onto that pull request's branch (`agent propose --stack-on <n>`). The
+            # checkout holds every branch's commits but no file contents (`filter: blob:none`),
+            # fetched on demand through the token removed below — so each listed head is fetched and
+            # its contents read HERE, while the token is still set, and the session can read and build
+            # on it without one. Only the agent's own branches, each
+            # name held to the characters a branch of ours has; a head that cannot be read is left
+            # out, and the session is the one that finds it missing.
+            jq -r '(.openPullRequests // [])[] | .branch' "$AGENT_REQUEST" 2>/dev/null | while IFS= read -r PC_STACK; do
+              case "$PC_STACK" in
+                predictable/agent/*) ;;
+                *) continue ;;
+              esac
+              case "$PC_STACK" in
+                *[!A-Za-z0-9._/-]*|*..*) continue ;;
+              esac
+              git fetch -q --no-tags origin "+refs/heads/${PC_STACK}:refs/remotes/origin/${PC_STACK}" || continue
+              git diff --numstat HEAD "refs/remotes/origin/${PC_STACK}" > /dev/null || true
+            done || true
+            # THE AGENT'S SESSION HOLDS NOTHING OF THIS JOB'S IT COULD ACT WITH (#2599 review). Its
+            # input is text from whoever opened the issue or wrote the comment, and it works with
+            # `bypassPermissions`, so the reply's checks are a boundary only if the session cannot go
+            # around them. The write token `actions/checkout` persisted is REMOVED, not moved aside —
+            # anything kept on this runner the session could read — the extraheader unset and each
+            # credentials file it includes emptied (the checkout's own cleanup still finds the file);
+            # the Propose step sets its own from its token to push what the reply names. And the
+            # session runs without the OIDC request token and URL and the runtime token, so it can
+            # neither mint a token the Control Center trusts nor report for itself: this step's stream
+            # and the Propose step's report are the only two that carry one.
+            pc_headers=$(git config --local --get-regexp '^http\..*\.extraheader$' 2>/dev/null || true)
+            while IFS=' ' read -r key _; do
+              if [ -n "$key" ]; then git config --local --unset-all "$key" || true; fi
+            done <<< "$pc_headers"
+            pc_includes=$(git config --local --get-regexp '^includeif\..*\.path$' 2>/dev/null || true)
+            while IFS=' ' read -r _ value; do
+              if [ -n "$value" ] && [ -f "$value" ]; then : > "$value"; fi
+            done <<< "$pc_includes"
+            # AN ORGANISATION SESSION (v83, #2691): every watched repository the run's record names is
+            # cloned beside this one, with the token the plane scoped to them handed to each clone
+            # through `GIT_CONFIG_*` alone — never argv, never a checkout's configuration — and
+            # DROPPED before the session starts: it is `contents: write` on every watched repository,
+            # so nothing holds it while the session runs. The session is told where they are
+            # (`--org-checkouts`); `agent propose --repo` commits in them, and the Propose step,
+            # after the session has exited, asks for a fresh token and pushes (`open_agent_proposal`).
+            PC_ORG_ARGS=()
+            if jq -e '(.org.watched // []) | length > 0' "$AGENT_REQUEST" >/dev/null 2>&1; then
+              pc_org_token || {
+                echo "::error::the Control Center gave this organisation session no token for its watched repositories"
+                exit 1
+              }
+              mkdir -p "$PC_ORG_DIR"
+              while IFS= read -r PC_ORG_REPO; do
+                [ -n "$PC_ORG_REPO" ] && [ "$PC_ORG_REPO" != "${GITHUB_REPOSITORY}" ] || continue
+                GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0="http.https://github.com/.extraheader" \
+                  GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$PC_ORG_TOKEN" | base64 | tr -d '\n')" \
+                  git clone --quiet "https://github.com/${PC_ORG_REPO}.git" "${PC_ORG_DIR}/${PC_ORG_REPO}" || {
+                    echo "::error::${PC_ORG_REPO} could not be checked out for the organisation session"
+                    exit 1
+                  }
+                git -C "${PC_ORG_DIR}/${PC_ORG_REPO}" config user.name "predictable-code[bot]"
+                git -C "${PC_ORG_DIR}/${PC_ORG_REPO}" config user.email "predictable-code[bot]@users.noreply.github.com"
+              done < <(jq -r '.org.watched[]' "$AGENT_REQUEST")
+              unset PC_ORG_TOKEN
+              PC_ORG_ARGS=(--org-checkouts "$PC_ORG_DIR")
+            fi
+            (
+              unset ACTIONS_ID_TOKEN_REQUEST_TOKEN ACTIONS_ID_TOKEN_REQUEST_URL ACTIONS_RUNTIME_TOKEN \
+                PC_AGENT_PUSH_TOKEN GH_TOKEN PC_ORG_TOKEN
+              predictable agent run "${PC_ORG_ARGS[@]}" \
+                --request "$AGENT_REQUEST" \
+                --pinned \
+                --permission-mode bypassPermissions \
+                --max-seconds "$AGENT_SECONDS" \
+                --steer-file "$PC_STEER_FILE" \
+                --actions-file "$PC_AGENT_ACTIONS" \
+                ${PC_BUDGET_ARGS[@]+"${PC_BUDGET_ARGS[@]}"} \
+                --path "$PWD/.predictable-code"
+            ) > "$AGENT_JSON" 2> "$RUN_JSON" &
           elif [ "${PC_COMMAND}" = "fix" ]; then
             predictable analyze fix-issue "${PC_TARGET}" \
               --path "$PWD/.predictable-code" --json > "$RESULT_JSON" 2> "$RUN_JSON" &
+          # AUTOFIX (#2585): the edits the analysis already decided, each kept only when its own
+          # re-analysis says the defect is gone and the build has no new error — no model, no key.
+          # The keys travel as a FILE on the data branch, as a Fix All batch's do. Its stream goes to
+          # stdout (`$AGENT_JSON`, pushed), where the Control Center reads which were kept, and
+          # `PREDICTABLE_REPORTED_RUN=1` keeps each re-analysis from publishing the base as fixed.
+          elif [ "${PC_COMMAND}" = "autofix" ]; then
+            export PREDICTABLE_REPORTED_RUN=1
+            AUTOFIX_FILE=".predictable-code/.autofix/${PC_TARGET}.json"
+            [ -f "$AUTOFIX_FILE" ] || {
+              echo "::error::no autofix batch ${PC_TARGET} on predictable-code-database (.autofix/${PC_TARGET}.json)"
+              exit 1
+            }
+            predictable autofix --keys-file "$AUTOFIX_FILE" \
+              --path "$PWD/.predictable-code" > "$AGENT_JSON" 2> "$RUN_JSON" &
           # AUTHORING (#2019): the same three verbs the desktop product runs, with `--json` so
           # the one file each wrote comes back as `filePath` — the ONLY path the propose step
           # stages. `--blank` because a hosted spec is authored by a person, never generated.
@@ -1932,13 +2597,17 @@ jobs:
             [ "$DESCRIBE_LIMIT" -gt 60 ] || DESCRIBE_LIMIT=60
             PC_HARD_STOP=$(( PC_STARTED + PC_JOB_SECONDS - 480 ))
             DESCRIBE_CHECKPOINT="${RUNNER_TEMP}/pc-describe-checkpoint.ndjson"
+            # Which half the repository agent's duties ask for (#2629); checked above.
+            DESCRIBE_AREAS="${PC_PROMPT:-with}"
             if [ "${PC_TEXT}" = "all" ]; then
-              predictable specs fill-descriptions --all \
+              predictable specs fill-descriptions --all --areas "$DESCRIBE_AREAS" \
                 --time-limit "$DESCRIBE_LIMIT" --checkpoint "$DESCRIBE_CHECKPOINT" \
+                ${PC_BUDGET_ARGS[@]+"${PC_BUDGET_ARGS[@]}"} \
                 --path "$PWD/.predictable-code" --json > "$RESULT_JSON" 2> "$RUN_JSON" &
             else
-              predictable specs fill-descriptions --specs "${PC_TEXT}" \
+              predictable specs fill-descriptions --specs "${PC_TEXT}" --areas "$DESCRIBE_AREAS" \
                 --time-limit "$DESCRIBE_LIMIT" --checkpoint "$DESCRIBE_CHECKPOINT" \
+                ${PC_BUDGET_ARGS[@]+"${PC_BUDGET_ARGS[@]}"} \
                 --path "$PWD/.predictable-code" --json > "$RESULT_JSON" 2> "$RUN_JSON" &
             fi
           # FINDING WHAT PREDICTABLE MISSES (#2355): the agent's driver, then the sync that runs the
@@ -1973,6 +2642,7 @@ jobs:
                 --max-seconds "$DISCOVER_SECONDS" \
                 --run "${GITHUB_RUN_ID}" \
                 ${FOCUS_ARGS[@]+"${FOCUS_ARGS[@]}"} \
+                ${PC_BUDGET_ARGS[@]+"${PC_BUDGET_ARGS[@]}"} \
                 --path "$PWD/.predictable-code"
               predictable sync --path "$PWD/.predictable-code" --json >"$RESULT_JSON"
             }
@@ -2037,9 +2707,11 @@ jobs:
               # `tee`, which reads all of its input, so what the review prints — Claude's stream when it
               # explains — is pushed live AND kept for the result line below.
               REVIEW_STATUS=0
+              # Its stderr into the pushed progress too (#2778), still in the log: Claude's turns report
+              # what explaining cost there, and the Control Center reads the spend from what is pushed.
               predictable review --base "$MERGE_BASE" --pr "${PC_TARGET}" --json \
                 ${EXPLAIN_ARGS[@]+"${EXPLAIN_ARGS[@]}"} \
-                --path "$PWD/.predictable-code" | tee "$REVIEW_OUT" || REVIEW_STATUS=$?
+                --path "$PWD/.predictable-code" 2> >(tee -a "$RUN_JSON" >&2) | tee "$REVIEW_OUT" || REVIEW_STATUS=$?
               # THE ONE RESULT LINE, each line parsed on its own so a banner cannot hide it.
               jq -cR 'fromjson? | objects | select(.type == "result") | .predictable_review // empty' \
                 "$REVIEW_OUT" 2>/dev/null | tail -n 1 > "$REVIEW_FILE" || : > "$REVIEW_FILE"
@@ -2055,7 +2727,7 @@ jobs:
                 predictable/*)
                   printf 'none\na pull request of ours is not given a second fix\n' > "$REVIEW_FIX"
                   return "$REVIEW_STATUS"
-                  ;;
+                ;;
               esac
               if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
                 printf 'not-attempted\nthis repository has no model key (ANTHROPIC_API_KEY), so no fix was attempted\n' > "$REVIEW_FIX"
@@ -2109,7 +2781,9 @@ jobs:
             PC_JOB_SECONDS=3600
             PC_STARTED="${PC_JOB_STARTED:-$(date +%s)}"
             PC_HARD_STOP=$(( PC_STARTED + PC_JOB_SECONDS - 900 ))
-            predictable sync --path "$PWD/.predictable-code" --json \
+            # THE STOP IS TOLD TO THE ANALYSIS, so its Lean build ends in time for everything after
+            # it (`PREDICTABLE_RUN_DEADLINE_EPOCH`): what it built is kept and the rest still runs.
+            PREDICTABLE_RUN_DEADLINE_EPOCH="$PC_HARD_STOP" predictable sync --path "$PWD/.predictable-code" --json \
               > "$RESULT_JSON" 2> "$RUN_JSON" &
           # A REPUBLISH (#2257): the specs recompiled over the branch's analysis in the database — no
           # translation, no solver, no witness — which rebuilds every dataset, the module hierarchy's
@@ -2126,7 +2800,7 @@ jobs:
               PC_JOB_SECONDS=3600
               PC_STARTED="${PC_JOB_STARTED:-$(date +%s)}"
               PC_HARD_STOP=$(( PC_STARTED + PC_JOB_SECONDS - 900 ))
-              predictable sync --path "$PWD/.predictable-code" --json \
+              PREDICTABLE_RUN_DEADLINE_EPOCH="$PC_HARD_STOP" predictable sync --path "$PWD/.predictable-code" --json \
                 > "$RESULT_JSON" 2> "$RUN_JSON" &
             fi
           else
@@ -2143,6 +2817,7 @@ jobs:
           while kill -0 "$SYNC_PID" 2>/dev/null; do
             sleep "$PUSH_POLL_SECONDS"
             push_progress || :
+            open_new_proposals || :
             # AN IMPLEMENTATION'S ROUNDS REACH THIS LOG AS THEY HAPPEN (#2339), not only when the
             # driver exits: a job GitHub cancels never reaches the dump below, and a cancelled run
             # whose log says nothing about its rounds cannot be told apart from one that never
@@ -2167,11 +2842,18 @@ jobs:
               if [ $(( PC_BEAT_NOW - ${PC_LAST_BEAT:-0} )) -ge 60 ]; then
                 PC_LAST_BEAT=$PC_BEAT_NOW
                 PC_PHASE=$(grep -o '"phase":"[^"]*"' "$RUN_JSON" 2>/dev/null | tail -1 | cut -d'"' -f4 || true)
-                PC_MIRROR=$(grep -oE 'mirror built [0-9]+ of [0-9]+' "$RUN_JSON" 2>/dev/null | tail -1 || true)
+                # The Lean build's own count, from the progress events it writes as Lake builds.
+                PC_MIRROR=$(grep -F '"step":"building the Lean project"' "$RUN_JSON" 2>/dev/null | tail -1 \
+                  | grep -oE '"done":[0-9]+,"total":[0-9]+' | sed -E 's/"done":([0-9]+),"total":([0-9]+)/built \1 of \2/' || true)
                 PC_MEM=$(free -m 2>/dev/null | awk '/^Mem:/ {print $3 " of " $2 " MB used, " $7 " MB available"}' || true)
                 PC_TOP=$(ps -eo rss=,comm= --sort=-rss 2>/dev/null \
                   | awk 'NR <= 3 {printf "%s %d MB; ", $2, $1 / 1024}' || true)
-                echo "[heartbeat] $(( PC_BEAT_NOW - ${PC_JOB_STARTED:-$PC_BEAT_NOW} ))s into the job; phase ${PC_PHASE:-starting}${PC_MIRROR:+; Lean }${PC_MIRROR}; memory ${PC_MEM:-unknown}; largest: ${PC_TOP:-unknown}"
+                # THE DISK, and the two stores that grow on it: four runs in five of a large Lean
+                # project ended `No space left on device` with nothing in the log saying so.
+                PC_DISK=$(df -h / 2>/dev/null | awk 'NR == 2 {print $4 " free of " $2}' || true)
+                PC_WS=$(du -sh "${PREDICTABLE_LEAN_WORKSPACES:-/nonexistent}" 2>/dev/null | cut -f1 || true)
+                PC_TOOLS=$(du -sh "$PC_HOME/mise" 2>/dev/null | cut -f1 || true)
+                echo "[heartbeat] $(( PC_BEAT_NOW - ${PC_JOB_STARTED:-$PC_BEAT_NOW} ))s into the job; phase ${PC_PHASE:-starting}${PC_MIRROR:+; Lean }${PC_MIRROR}; memory ${PC_MEM:-unknown}; disk ${PC_DISK:-unknown} (Lean workspaces ${PC_WS:-none}, toolchains ${PC_TOOLS:-none}); largest: ${PC_TOP:-unknown}"
               fi
             fi
             # THE SECOND LINE of a description run's time bound (#2264), set by its branch above:
@@ -2223,16 +2905,45 @@ jobs:
           if [ "${PC_HARD_STOPPED:-no}" = "yes" ] && { [ "${PC_COMMAND}" = "sync" ] || [ "${PC_COMMAND}" = "republish" ]; }; then
             echo "::warning::the analysis was stopped at its time bound before it finished; nothing was published, and what it built is kept, so the next analysis continues from it"
             echo "The analysis was stopped at its time bound before it finished. Nothing was published; what it built is kept, so the next analysis continues from it." >> "$GITHUB_STEP_SUMMARY"
+            # Read by the step 'Stopped at the time bound' below, whose conclusion is how the plane
+            # tells this stop from every other failure without reading a log.
+            echo "stopped=true" >> "$GITHUB_OUTPUT"
           elif [ "${PC_HARD_STOPPED:-no}" = "yes" ] && [ "$RUN_STATUS" -gt 128 ]; then
-            if [ "${PC_COMMAND}" = "spec-implement" ]; then
-              echo "::warning::${PC_COMMAND} was stopped at its time bound; what the agent wrote is proposed as a draft, unchecked"
-              echo "The implementation was stopped at its time bound; what the agent wrote is proposed as a draft, unchecked." >> "$GITHUB_STEP_SUMMARY"
-            else
-              echo "::warning::${PC_COMMAND} was stopped at its time bound; the descriptions it wrote are proposed from its checkpoint, and the rest are left for another run"
-              echo "The run was stopped at its time bound; what it wrote is proposed, and the rest are left for another run." >> "$GITHUB_STEP_SUMMARY"
-            fi
+            case "${PC_COMMAND}" in
+              fix-agent|fix-all-agent)
+                # A STOPPED DRIVER WROTE NO RESULT, so this step writes the one it would have: `continue`.
+                # The Control Center continues a fix only on that outcome, read from the stream, and
+                # the Propose step reads it too — pushing a single fix's work in progress, or a batch's
+                # verified commits (what no round verified is never committed). Without it the plane
+                # would read a stopped run as one that ended with no answer.
+                # A stop that landed inside the driver's own `git commit` leaves its lock, and every
+                # git command of the Propose step would then refuse. Nothing of ours is running now.
+                rm -f .git/index.lock
+                # ONE result per run: a driver that wrote its own before it was stopped has answered.
+                PC_HAS_RESULT=$(jq -cR 'fromjson? | objects | select(.type == "result" and .predictable_fix != null)' "$AGENT_JSON" 2>/dev/null | wc -l | tr -d ' ')
+                if [ "${PC_HAS_RESULT:-0}" = 0 ]; then
+                  PC_STOP_ROUNDS=$(jq -cR 'fromjson? | objects | select(.subtype == "predictable_fix_round")' "$AGENT_JSON" 2>/dev/null | wc -l | tr -d ' ')
+                  jq -cn --argjson rounds "${PC_STOP_ROUNDS:-0}" '{type: "result", subtype: "fix_continue", is_error: true,
+                    result: "RESULT: not fixed — stopped at the time bound of this job; the work continues in a new run",
+                    predictable_fix: {outcome: "continue", rounds: $rounds, last: null,
+                      reason: "stopped at the time bound of this job; the work continues in a new run"}}' >> "$AGENT_JSON"
+                fi
+                echo "::warning::${PC_COMMAND} was stopped at its time bound; what it verified is kept and the fix continues in a new run"
+                echo "The fix was stopped at its time bound; what it verified is kept, and it continues in a new run." >> "$GITHUB_STEP_SUMMARY"
+                ;;
+              spec-implement)
+                echo "::warning::${PC_COMMAND} was stopped at its time bound; what the agent wrote is proposed as a draft, unchecked"
+                echo "The implementation was stopped at its time bound; what the agent wrote is proposed as a draft, unchecked." >> "$GITHUB_STEP_SUMMARY"
+                ;;
+              *)
+                echo "::warning::${PC_COMMAND} was stopped at its time bound; the descriptions it wrote are proposed from its checkpoint, and the rest are left for another run"
+                echo "The run was stopped at its time bound; what it wrote is proposed, and the rest are left for another run." >> "$GITHUB_STEP_SUMMARY"
+                ;;
+            esac
           fi
           if [ "${PC_HARD_STOPPED:-no}" = "yes" ] && [ "$RUN_STATUS" -gt 128 ]; then RUN_STATUS=0; fi
+          # What the session proposed after the last poll opens here, before the Propose step.
+          open_new_proposals || :
           # The tail: phases written between the last poll and the process exiting are
           # the ones naming the outcome, and losing them loses the answer.
           push_progress final || :
@@ -2256,6 +2967,19 @@ jobs:
             echo "::group::Progress events ($(wc -l < "$RUN_JSON" | tr -d ' ') lines)"
             cat "$RUN_JSON"
             echo "::endgroup::"
+          fi
+          # AN ANALYSIS THAT DID NOT END WELL SAYS WHERE IT WAS, in its own words: its log is
+          # written under the state directory, which a stopped or failed run never publishes, so
+          # without this the last thing it did was in no place a reader can see.
+          if { [ "${PC_COMMAND}" = "sync" ] || [ "${PC_COMMAND}" = "republish" ]; } \
+            && { [ "${PC_HARD_STOPPED:-no}" = "yes" ] || [ "$RUN_STATUS" -ne 0 ]; }; then
+            PC_LOG=$(find "$PWD/.predictable-code" -path '*/logs/*' -name '*.log' -type f -exec ls -t {} + 2>/dev/null \
+              | sed -n '1p' || true)
+            if [ -n "$PC_LOG" ]; then
+              echo "::group::The analysis's own log, its last 200 lines ($PC_LOG)"
+              tail -n 200 "$PC_LOG" || true
+              echo "::endgroup::"
+            fi
           fi
           # THE AGENT'S STREAM, for the same reason and with the same caveat: a push is
           # best-effort, and this is the customer's own record of what the agent did.
@@ -2488,6 +3212,21 @@ jobs:
             echo "::notice::republished over the analysis of ${GITHUB_REF_NAME}, whose verdict was ${RESULT}"
             exit 0
           fi
+          # THE REPOSITORY AGENT (#2599) REPORTS ITS RESULT LINE, kept for the Propose step, which pushes
+          # and opens what it names and reports it. A run that printed none still reports — `failed`,
+          # with why — so the Control Center never reads silence as a run that did nothing.
+          if [ "${PC_COMMAND}" = "agent" ]; then
+            jq -cR 'fromjson? | objects | select(.type == "result") | .predictable_agent // empty' "$AGENT_JSON" 2>/dev/null \
+              | tail -n 1 > "${RUNNER_TEMP}/pc-agent.json" || true
+            if [ ! -s "${RUNNER_TEMP}/pc-agent.json" ]; then
+              jq -n --arg status "$RUN_STATUS" \
+                '{outcome: "failed", summary: "", reason: ("predictable agent exited " + $status + " without its result line"), rounds: 0, comments: [], labels: [], proposals: [], issues: [], pushes: [], refused: []}' \
+                > "${RUNNER_TEMP}/pc-agent.json"
+            fi
+            echo "::notice::agent run ${PC_TARGET}: $(jq -r '.outcome' "${RUNNER_TEMP}/pc-agent.json")"
+            echo "result=agent" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           # A REVIEW (#2367) REPORTS ITS RESULT LINE, and nothing else decides it: a review that printed
           # none did not look, so the run fails saying so — and the Control Center, hearing no result,
           # fails the check as not analysed with this run's conclusion. A result printed beside a
@@ -2672,6 +3411,42 @@ jobs:
                   echo "::warning::no requirements could be derived from the description: none of what the model proposed passed the requirement check"
                 fi
               fi
+              # WHAT A DESCRIPTION EDIT DID TO THE REQUIREMENTS (#2563), when the spec's requirements
+              # were derived from its description and a model derived them again: added, removed, a
+              # person's requirement that now contradicts the description, and what the model
+              # proposed that never passed the check. Sentences and reasons are MODEL TEXT (or a
+              # person's), so they go to a FILE the propose step renders, as INERT markdown — the
+              # rule the generation's left-out list follows above, for the same reasons.
+              if [ "${PC_COMMAND}" = "spec-describe" ]; then
+                if [ "$(jq -r '.rederived // false' "$RESULT_JSON" 2>/dev/null || echo false)" = "true" ]; then
+                  echo "spec_rederived=yes" >> "$GITHUB_OUTPUT"
+                  jq -r 'def inert: tostring | gsub("[[:cntrl:]]+"; " ") | gsub("`+"; "`") | "`` " + . + " ``";
+                    def ids: tostring | gsub("[^A-Za-z0-9-]"; "");
+                    (if ((.added // []) | length) > 0 then
+                      "### Added: the new description implies them", "",
+                      ((.added // [])[] | "- \(.id | ids) — \(.description | inert)"), "" else empty end),
+                    (if ((.removed // []) | length) > 0 then
+                      "### Removed: the new description no longer implies them", "",
+                      ((.removed // [])[] | "- \(.id | ids) — \(.description | inert)"), "" else empty end),
+                    (if ((.conflicts // []) | length) > 0 then
+                      "### Kept, and contradicting the new description", "",
+                      "A person added these, so nothing removes them on its own: remove one, change it, or change the description.", "",
+                      ((.conflicts // [])[] | "- \(.id | ids) — \(.description | inert): \(.conflict | inert)"), "" else empty end),
+                    (if ((.rejected // []) | length) > 0 then
+                      "### Left out: not canonical after three attempts", "",
+                      ((.rejected // [])[] | "- \(.description | inert) — \(.error | inert)"), "" else empty end)' \
+                    "$RESULT_JSON" > "${RUNNER_TEMP}/pc-spec-reconciled.md" 2>/dev/null \
+                    || : > "${RUNNER_TEMP}/pc-spec-reconciled.md"
+                  # COUNTS, digits only, for the commit message: a reader of `git log` sees what
+                  # the edit did to the requirements without opening the pull request.
+                  ADDED=$(jq -r '(.added // []) | length' "$RESULT_JSON" 2>/dev/null | tr -cd '0-9' || true)
+                  REMOVED=$(jq -r '(.removed // []) | length' "$RESULT_JSON" 2>/dev/null | tr -cd '0-9' || true)
+                  CONFLICTS=$(jq -r '(.conflicts // []) | length' "$RESULT_JSON" 2>/dev/null | tr -cd '0-9' || true)
+                  echo "spec_added=${ADDED:-0}" >> "$GITHUB_OUTPUT"
+                  echo "spec_removed=${REMOVED:-0}" >> "$GITHUB_OUTPUT"
+                  echo "spec_conflicts=${CONFLICTS:-0}" >> "$GITHUB_OUTPUT"
+                fi
+              fi
             fi
             exit 0
           fi
@@ -2746,6 +3521,36 @@ jobs:
             echo "::error::the sync produced no readable verdict"
             exit 1
           fi
+          # A LEAN BUILD THE RUN'S DEADLINE CUT SHORT IS A STOP AT THE TIME BOUND, said by the
+          # product, never inferred here. The analysis bounds its Lean build to the hard stop less
+          # what follows it (`PREDICTABLE_RUN_DEADLINE_EPOCH`), so a cold build of a large project
+          # ends BEFORE the hard stop: the sync finishes `degraded`, which is not an answer, and the
+          # stop above never fires. Unmarked, the plane read it as an ordinary failure and never
+          # continued it, so the build waited for the next push with its progress in a cache. Each
+          # module that bound left unbuilt carries the product's words for it in the result's
+          # `notTranslated` (`leanDeadlineCutMark`); a build cut by its OWN bound does not, since no
+          # deadline is gone by the next run. Marked as the hard stop is, and failed as it is: the
+          # plane continues it only while its Lean build kept something new, and at most
+          # `SYNC_CONTINUATION_CAP` times in a row.
+          if { [ "${PC_COMMAND}" = "sync" ] || [ "${PC_COMMAND}" = "republish" ]; } \
+            && jq -e '[.result.degraded.notTranslated[]? | select((.reason // "") | contains("was stopped at the run deadline"))] | length > 0' \
+              "$RESULT_JSON" >/dev/null 2>&1; then
+            echo "::warning::the analysis's Lean build was stopped at this run's deadline before it finished; what it built is kept, so the next analysis continues from it"
+            echo "The analysis's Lean build was stopped at this run's deadline before it finished. What it built is kept, so the next analysis continues from it." >> "$GITHUB_STEP_SUMMARY"
+            echo "stopped=true" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+
+      # THE MARKER the Control Center reads from the jobs API (`run-steps.ts`, `TIME_BOUND_STEP`):
+      # this step SUCCEEDS only for an analysis stopped at its time bound, so the plane can continue
+      # it from what it kept. A step's conclusion rather than a line in the log, because the log does
+      # not exist until the job completes and the last progress push races the completion delivery.
+      # Its name is the contract; renaming it silently ends every continuation.
+      - name: Stopped at the time bound
+        if: always() && steps.analyse.outputs.stopped == 'true'
+        run: |
+          set -euo pipefail
+          echo "the analysis stopped at its time bound; what it built is kept below"
 
       # Kept whatever the run's outcome: a store holds only entries keyed by what they were made
       # from, so what a failed run wrote is as right as what a green one did.
@@ -2759,26 +3564,63 @@ jobs:
             .predictable-code/${{ github.ref_name }}/.predictable-code/verification/.analysis-cache
           key: predictable-reuse-${{ github.ref_name }}-${{ github.run_id }}
 
-      # Named by what it holds, and saved only when that is not what was restored: a run whose mirror
-      # did not change writes nothing, and the time left after the hard stop is not spent uploading.
-      - name: Name the Lean mirror's build
+      # NAMED BY WHAT THEY HOLD, and saved only when that is not what was restored: a run that built
+      # nothing new writes nothing, and the time left after the hard stop is not spent uploading.
+      # Saved WHATEVER the run's outcome — a run stopped at its time bound above all, since what it
+      # built is how the next one gets further — and never only when it succeeded: Lake writes a
+      # module's trace only once its build is whole, so what a stopped build left is as right as
+      # what a finished one did.
+      #
+      # WHAT A PREBUILT FETCHER PROVIDES IS LEFT OUT (`.lake/prebuilt-packages`, written by the
+      # analysis): Mathlib's own cache puts its build and its dependencies' back on every run, and
+      # kept here that is several gigabytes of this repository's cache budget for nothing.
+      - name: Name the Lean workspaces
         id: leankey
         if: always()
         env:
           REF: ${{ github.ref_name }}
-          TRACES: ${{ hashFiles(format('.predictable-code/{0}/.predictable-code/verification/.lake/build/**/*.trace', github.ref_name)) }}
+          PREDICTABLE_LEAN_WORKSPACES: ${{ env.PREDICTABLE_LEAN_WORKSPACES }}
+          PKGS: ${{ hashFiles('**/lake-manifest.json', '**/lean-toolchain', '!.predictable-code/**', '!**/node_modules/**') }}
         run: |
           set -euo pipefail
-          if [ -n "$TRACES" ]; then
-            echo "key=predictable-lean-build-${REF}-${TRACES}" >> "$GITHUB_OUTPUT"
+          WS="${PREDICTABLE_LEAN_WORKSPACES:-}"
+          if [ -z "$WS" ] || [ ! -d "$WS" ]; then exit 0; fi
+          # A project sits at its place in its repository inside its workspace (v85), so a record is
+          # found at any depth, never only at a workspace's root.
+          while IFS= read -r rec; do
+            stage="${rec%/.lake/prebuilt-packages}"
+            while IFS= read -r pkg; do
+              [ -n "$pkg" ] && rm -rf "$stage/.lake/packages/$pkg/.lake/build"
+            done < "$rec"
+          done < <(find "$WS" -path '*/.lake/prebuilt-packages' -not -path '*/.lake/packages/*' -type f 2>/dev/null)
+          # Lake's traces under the workspaces' own builds, and under their dependencies', each
+          # hashed by its path and bytes; none means nothing was built, and nothing is saved.
+          pc_sha() { sha256sum 2>/dev/null || shasum -a 256; }
+          own=$(cd "$WS" && find . -path '*/.lake/build/*' -not -path '*/.lake/packages/*' -name '*.trace' -type f 2>/dev/null | LC_ALL=C sort)
+          if [ -n "$own" ]; then
+            echo "ws=predictable-lean-ws-${REF}-$(cd "$WS" && printf '%s\n' "$own" | while IFS= read -r t; do printf '%s ' "$t"; pc_sha < "$t"; done | pc_sha | cut -c1-32)" >> "$GITHUB_OUTPUT"
           fi
+          deps=$(cd "$WS" && find . -path '*/.lake/packages/*' -name '*.trace' -type f 2>/dev/null | LC_ALL=C sort)
+          if [ -n "$deps" ]; then
+            echo "pkgs=predictable-lean-pkgs-${PKGS}-$(cd "$WS" && printf '%s\n' "$deps" | while IFS= read -r t; do printf '%s ' "$t"; pc_sha < "$t"; done | pc_sha | cut -c1-32)" >> "$GITHUB_OUTPUT"
+          fi
+          du -sh "$WS" 2>/dev/null || true
 
-      - name: Keep the Lean mirror's build
-        if: always() && steps.leankey.outputs.key != '' && steps.leankey.outputs.key != steps.leanbuild.outputs.cache-matched-key
+      - name: Keep the Lean workspaces
+        if: always() && steps.leankey.outputs.ws != '' && steps.leankey.outputs.ws != steps.leanws.outputs.cache-matched-key
         uses: actions/cache/save@v5
         with:
-          path: .predictable-code/${{ github.ref_name }}/.predictable-code/verification/.lake/build
-          key: ${{ steps.leankey.outputs.key }}
+          path: |
+            ${{ runner.temp }}/predictable-lean-workspaces
+            !${{ runner.temp }}/predictable-lean-workspaces/**/.lake/packages
+          key: ${{ steps.leankey.outputs.ws }}
+
+      - name: Keep the Lean dependencies
+        if: always() && steps.leankey.outputs.pkgs != '' && steps.leankey.outputs.pkgs != steps.leanpkgs.outputs.cache-matched-key
+        uses: actions/cache/save@v5
+        with:
+          path: ${{ runner.temp }}/predictable-lean-workspaces/**/.lake/packages
+          key: ${{ steps.leankey.outputs.pkgs }}
 
       # NOT WHEN THE RESTORE MATCHED THIS VERY KEY: the entry already exists, so the save could only
       # be refused — after it had archived the whole store, seconds of every run spent on nothing.
@@ -2840,6 +3682,9 @@ jobs:
           VERDICT: ${{ steps.analyse.outputs.result }}
           TAG: ${{ steps.toolchain.outputs.tag }}
           PC_COMMAND: ${{ inputs.command }}
+          # The repository's default branch, from the dispatch itself: the agent's push guard reads it
+          # here, never from a file the agent's session could have written.
+          PC_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
           # Whether a republish compiled rather than analysed (#2257), as the restore step decided.
           PC_REPUBLISH: ${{ env.PC_REPUBLISH }}
           # Through the environment for the reason the run step says: this input
@@ -2861,6 +3706,12 @@ jobs:
           SPEC_WRITTEN: ${{ steps.analyse.outputs.spec_written }}
           # `yes` when a generation stopped at a draft for its person to confirm (#2307).
           SPEC_DRAFTED: ${{ steps.analyse.outputs.spec_drafted }}
+          # `yes` when a description edit derived the spec's requirements again (#2563), and how
+          # many it added, removed and found in conflict; digits.
+          SPEC_REDERIVED: ${{ steps.analyse.outputs.spec_rederived }}
+          SPEC_ADDED: ${{ steps.analyse.outputs.spec_added }}
+          SPEC_REMOVED: ${{ steps.analyse.outputs.spec_removed }}
+          SPEC_CONFLICTS: ${{ steps.analyse.outputs.spec_conflicts }}
           # The branch a set-of-files verb proposes on (#2103), named by the step that may have
           # continued it; whether it did is `SPEC_CONTINUED`.
           FILES_BRANCH: ${{ steps.spec.outputs.files_branch }}
@@ -2930,119 +3781,183 @@ jobs:
             fi
           }
 
-          # WHY A PUSH IS WRAPPED AT ALL. A run can do every piece of work correctly and
-          # then lose all of it at this line, and git's own message does not say why.
-          # MEASURED: an analysis of `defuncto-predictable` translated 31 of 31 files,
-          # analysed them, inferred requirements — and ended with
-          #
-          #   ! [remote rejected] predictable/analysis-35549208032
-          #     (refusing to allow a GitHub App to create or update workflow
-          #      `.github/workflows/predictable-sync.yml`)
-          #
-          # because the Predictable workflow update had been merged WHILE the run was in
-          # flight. The run had checked the older commit out, so its branch carries the
-          # older workflow file, and once the default branch moved GitHub reads the push
-          # as an App updating a workflow — which this token may not do.
-          #
-          # The remedy is the customer's and it is one sentence long, so it is said here
-          # rather than left as a git error in a log nobody reads. NOT auto-repaired:
-          # rebasing the results onto the moved tip would make the analysis describe a
-          # commit its branch is not based on, and that is a product decision rather
-          # than a repair.
-          push_or_explain() {
-            # Extra push flags, if any, come first: only the authored-spec and fix paths pass one
-            # (`--force-with-lease`, below); every other caller pushes exactly as before.
-            if git push "$@" origin "$BRANCH" 2> "${RUNNER_TEMP}/pc-push.err"; then
-              cat "${RUNNER_TEMP}/pc-push.err" >&2
-              return 0
-            fi
-            cat "${RUNNER_TEMP}/pc-push.err" >&2
-            if grep -q "create or update workflow" "${RUNNER_TEMP}/pc-push.err"; then
-              echo "::error::this run started from an older commit, and the Predictable workflow was updated on ${GITHUB_REF_NAME} while it ran; nothing is wrong with what it wrote, but it cannot be pushed from a branch carrying the older workflow file — re-run it and it will push"
-              {
-                echo "### What this run wrote could not be pushed"
-                echo
-                echo "This run started before the Predictable workflow on \`${GITHUB_REF_NAME}\` was updated, so its branch carries the older copy of \`.github/workflows/predictable-sync.yml\`. GitHub refuses a push from an app that would change a workflow file, which is the right rule and is why this stopped here."
-                echo
-                # Said of what the run WROTE: only a fix and an authored spec push a branch now, an
-                # analysis is a commit on predictable-code-database and never comes through here.
-                echo '**Nothing is wrong with what this run wrote.** Run it again and it will push.'
-              } >> "$GITHUB_STEP_SUMMARY"
-            fi
-            return 1
-          }
+          # `push_or_explain`, `open_pull_request` and `open_agent_proposal`: written by the Run step
+          # (`pc-propose-helpers.sh`), which opens an agent's proposals while its session runs, so the
+          # two steps push and open by the SAME functions.
+          . "${RUNNER_TEMP}/pc-propose-helpers.sh"
 
-          # THE CONTROL PLANE OPENS THE PULL REQUEST, with the App's installation token.
+          # ──────────────────────────────────────────────────────────────────────────
+          # THE REPOSITORY AGENT (#2599): WHAT THE SESSION RECORDED IS PUSHED AND OPENED, THEN REPORTED.
           #
-          # A pull request this job opens with its own GITHUB_TOKEN starts NO workflow run:
-          # that is GitHub's rule for every event the token causes. So the repository's own
-          # CI never ran on our pull requests, the Control Center had no checks to show, and
-          # a base that requires checks could never merge one. Opened by the plane, CI runs
-          # as on any other pull request, and the plane records it and arms the auto-merge
-          # choice of whoever started this run.
-          #
-          # IT FALLS BACK to opening it here when the plane cannot be reached or refuses, so
-          # a run never loses its results over it, and it says so: without the plane, this
-          # repository's CI will not run on the pull request until something pushes to it.
-          open_pull_request() {
-            PC_PR_HEAD="$1"
-            PC_PR_TITLE="$2"
-            PC_PR_BODY="$3"
-            # `$4` is the pull request's MODE, at most one: `draft` — a Fix All Defects batch's pull
-            # request opens before its work is done (#2313) — or `hold`, which asks the plane NOT to
-            # merge it on its own (#2307) and can only withdraw the auto-merge its opener chose,
-            # never arm one.
-            PC_PR_DRAFT=""
-            PC_PR_HOLD=false
-            case "${4:-}" in
-              draft) PC_PR_DRAFT=draft ;;
-              hold) PC_PR_HOLD=true ;;
+          # Each proposal is a branch `predictable agent propose` committed under
+          # `predictable/agent/<run>/`, pushed and opened through the ONE opener onto the branch this
+          # ran on; each push is the pull request branch this ran on, pushed as `agent push`
+          # committed it, never forced. Issues, comments and labels are NOT made here: the Control
+          # Center's App opens and posts them from the report, which carries this job's OIDC token, so
+          # a reader sees them as the App's and nothing here can write to GitHub but the branches the
+          # session recorded.
+          # ──────────────────────────────────────────────────────────────────────────
+          if [ "${PC_COMMAND}" = "agent" ]; then
+            AGENT_FILE="${RUNNER_TEMP}/pc-agent.json"
+            [ -s "$AGENT_FILE" ] || {
+              echo "::error::the agent reported nothing, so there is nothing to report"
+              exit 1
+            }
+            : > "${RUNNER_TEMP}/pc-agent-opened.ndjson"
+            : > "${RUNNER_TEMP}/pc-agent-pushed.ndjson"
+            : > "${RUNNER_TEMP}/pc-agent-notes.txt"
+            # The Run step removed the checkout's write token before the agent's session; this step
+            # pushes with its OWN, set here, after the session has ended.
+            git config --local "http.https://github.com/.extraheader" \
+              "AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')"
+            PROPOSALS=$(jq -r '.proposals | length' "$AGENT_FILE" | tr -cd '0-9')
+            # WHAT THE RUN STEP ALREADY OPENED while the session ran (v78), by branch: reported here
+            # with the fixes the driver verified for it, never opened again. An older workflow wrote
+            # no such file, and then every proposal opens here.
+            PC_OPENED_NOW="${RUNNER_TEMP}/pc-agent-opened-now.ndjson"
+            [ -f "$PC_OPENED_NOW" ] || : > "$PC_OPENED_NOW"
+            for i in $(seq 0 $(( ${PROPOSALS:-0} - 1 ))); do
+              [ "${PROPOSALS:-0}" -gt 0 ] || break
+              BRANCH=$(jq -r ".proposals[$i].branch" "$AGENT_FILE")
+              TITLE=$(jq -r ".proposals[$i].title" "$AGENT_FILE")
+              # The repository it is in, for an organisation session (v83, #2691); empty for this one.
+              PC_REPO=$(jq -r ".proposals[$i].repo // \"\"" "$AGENT_FILE")
+              # WHICH DEFECTS ITS CHANGE CLOSES (#2664): the keys `fix-check` verified gone in the
+              # session before this proposal, which the Control Center records as closed defects.
+              FIXES=$(jq -c "[.proposals[$i].fixes // [] | .[] | strings]" "$AGENT_FILE")
+              : > "${RUNNER_TEMP}/pc-agent-one.ndjson"
+              jq -c --arg branch "$BRANCH" --arg repo "$PC_REPO" \
+                'select(.branch == $branch and (.repo // "") == $repo)' "$PC_OPENED_NOW" \
+                | sed -n 1p > "${RUNNER_TEMP}/pc-agent-one.ndjson" || :
+              if [ ! -s "${RUNNER_TEMP}/pc-agent-one.ndjson" ]; then
+                jq -r ".proposals[$i].body" "$AGENT_FILE" > "${RUNNER_TEMP}/pc-agent-body-$i.md"
+                open_agent_proposal "$BRANCH" "$TITLE" "${RUNNER_TEMP}/pc-agent-body-$i.md" \
+                  "${RUNNER_TEMP}/pc-agent-one.ndjson" "${RUNNER_TEMP}/pc-agent-notes.txt" "$PC_REPO" || continue
+              elif [ -z "$PC_REPO" ]; then
+                # OPENED WHILE THE SESSION RAN, THEN ADDED TO BY THE DRIVER (#2651, #2656, v80): a spec
+                # description the session queued is committed onto the proposal it belongs to AFTER the
+                # session, and the spec's check is appended to that proposal's description — in this
+                # repository's own checkout, never an organisation session's other one. So the
+                # branch is pushed again — a fast-forward of what the loop pushed, never forced — and
+                # what the driver appended to the description the pull request was opened with is
+                # appended to the pull request's own, keeping whatever was written there since.
+                PC_AP_NUMBER=$(jq -r '.number' "${RUNNER_TEMP}/pc-agent-one.ndjson")
+                PC_AP_LOCAL=$(git rev-parse --verify --quiet "refs/heads/${BRANCH}" || true)
+                PC_AP_REMOTE=$(git ls-remote origin "refs/heads/${BRANCH}" | cut -f1 || true)
+                if [ -n "$PC_AP_LOCAL" ] && [ -n "$PC_AP_REMOTE" ] && [ "$PC_AP_LOCAL" != "$PC_AP_REMOTE" ] \
+                  && ! push_or_explain; then
+                  echo "the run's later commits on ${BRANCH} could not be pushed to #${PC_AP_NUMBER}" >> "${RUNNER_TEMP}/pc-agent-notes.txt"
+                fi
+                : > "${RUNNER_TEMP}/pc-agent-added-$i.md"
+                if [ -f "${RUNNER_TEMP}/pc-agent-actions.ndjson" ]; then
+                  jq -nr --rawfile actions "${RUNNER_TEMP}/pc-agent-actions.ndjson" \
+                    --slurpfile agent "$AGENT_FILE" --argjson i "$i" \
+                    '($agent[0].proposals[$i]) as $p
+                     | ([$actions | split("\n")[] | fromjson? | objects
+                         | select(.kind == "proposal" and .branch == $p.branch) | (.body // "")] | first) as $opened
+                     | if ($opened | type) == "string" and ($p.body | startswith($opened))
+                       then $p.body[($opened | length):] else "" end' \
+                    > "${RUNNER_TEMP}/pc-agent-added-$i.md" || :
+                fi
+                if grep -q '[^[:space:]]' "${RUNNER_TEMP}/pc-agent-added-$i.md"; then
+                  if gh pr view "$PC_AP_NUMBER" --json body -q .body > "${RUNNER_TEMP}/pc-agent-now-body-$i.md" \
+                    && cat "${RUNNER_TEMP}/pc-agent-added-$i.md" >> "${RUNNER_TEMP}/pc-agent-now-body-$i.md" \
+                    && gh pr edit "$PC_AP_NUMBER" --body-file "${RUNNER_TEMP}/pc-agent-now-body-$i.md" >/dev/null; then
+                    echo "Added what the run found after its session to #${PC_AP_NUMBER}'s description"
+                  else
+                    echo "what the run found after its session could not be added to #${PC_AP_NUMBER}'s description" >> "${RUNNER_TEMP}/pc-agent-notes.txt"
+                  fi
+                fi
+              fi
+              jq -c --argjson fixes "$FIXES" '. + {fixes: $fixes}' "${RUNNER_TEMP}/pc-agent-one.ndjson" \
+                >> "${RUNNER_TEMP}/pc-agent-opened.ndjson"
+            done
+            # A pull request opened mid-session whose proposal the driver's report does not carry (a
+            # driver stopped before it held its actions) is still reported, closing nothing.
+            while IFS= read -r PC_NOW_ROW; do
+              PC_NOW_BRANCH=$(printf '%s' "$PC_NOW_ROW" | jq -r '.branch')
+              PC_NOW_REPO=$(printf '%s' "$PC_NOW_ROW" | jq -r '.repo // ""')
+              if [ "$(jq -c --arg branch "$PC_NOW_BRANCH" --arg repo "$PC_NOW_REPO" 'select(.branch == $branch and (.repo // "") == $repo)' "${RUNNER_TEMP}/pc-agent-opened.ndjson" | wc -l | tr -d ' ')" = 0 ]; then
+                printf '%s' "$PC_NOW_ROW" | jq -c '. + {fixes: []}' >> "${RUNNER_TEMP}/pc-agent-opened.ndjson"
+              fi
+            done < "$PC_OPENED_NOW"
+            PUSHES=$(jq -r '.pushes | length' "$AGENT_FILE" | tr -cd '0-9')
+            # A PUSH ONLY FOR A PULL REQUEST OF THIS REPOSITORY, onto its own head — opened, a comment
+            # mentioning the agent, or the agent's own one left conflicting (#2685) — never the
+            # default branch (#2599 review). The event's kind is read from the run's id, which the
+            # Control Center dispatched as `target`, and the default branch from the dispatch: neither
+            # from anything the agent's session could have written.
+            PC_MAY_PUSH=no
+            case "${PC_TARGET}" in
+              [0-9]*-pull-request-opened-*|[0-9]*-pull-request-comment-*|[0-9]*-pull-request-conflict-*)
+                [ -n "${PC_DEFAULT_BRANCH}" ] && [ "${GITHUB_REF_NAME}" != "${PC_DEFAULT_BRANCH}" ] && PC_MAY_PUSH=yes
+                ;;
             esac
-            # No plane named, or no way to mint a token (a run started by hand from GitHub's own
-            # UI can lack either): straight to the fallback rather than an unbound variable.
-            PC_PR_OIDC=""
+            if [ "${PUSHES:-0}" -gt 0 ] && [ "$PC_MAY_PUSH" != yes ]; then
+              echo "a push to ${GITHUB_REF_NAME}: a run pushes only to the pull request it was opened for" >> "${RUNNER_TEMP}/pc-agent-notes.txt"
+            elif [ "${PUSHES:-0}" -gt 0 ]; then
+              # The ONE branch a run may push to is the one it ran on (the driver holds the reply to it),
+              # read as the LOCAL branch of that name: the agent may have left HEAD on a proposal.
+              BRANCH="${GITHUB_REF_NAME}"
+              BEFORE=$(git ls-remote origin "refs/heads/${BRANCH}" | cut -f1)
+              AFTER=$(git rev-parse --verify --quiet "refs/heads/${BRANCH}" || true)
+              if [ -z "$AFTER" ] || [ "$BEFORE" = "$AFTER" ]; then
+                echo "a push to ${BRANCH} was named and nothing was committed on it" >> "${RUNNER_TEMP}/pc-agent-notes.txt"
+              elif push_or_explain; then
+                jq -nc --arg branch "${BRANCH}" --arg sha "$AFTER" \
+                  --argjson number "$(jq '.pushes[0].number // null' "$AGENT_FILE")" \
+                  '{branch: $branch, number: $number, sha: $sha}' >> "${RUNNER_TEMP}/pc-agent-pushed.ndjson"
+              else
+                echo "the push to ${BRANCH} failed" >> "${RUNNER_TEMP}/pc-agent-notes.txt"
+              fi
+            fi
+            # ENGINE REPORTS (v84): a mistake of Predictable's own the session met, recorded with
+            # `predictable report` as an anonymised reproduction project the agent wrote — never this
+            # repository's code — and held by the driver. Forwarded as they are; the Control Center
+            # files each on Predictable's repository only while this repository's agent has
+            # "Report Predictable's mistakes" on.
+            jq -n --slurpfile agent "$AGENT_FILE" \
+              --slurpfile opened "${RUNNER_TEMP}/pc-agent-opened.ndjson" \
+              --slurpfile pushed "${RUNNER_TEMP}/pc-agent-pushed.ndjson" \
+              --rawfile notes "${RUNNER_TEMP}/pc-agent-notes.txt" \
+              --arg run "${PC_TARGET}" \
+              '($agent[0]) as $a |
+               ([$a.refused[]?] + ($notes | split("\n") | map(select(. != "")))) as $left |
+               {run: $run, result: {
+                 outcome: (if $a.outcome == "acted" and ($a.comments | length) == 0 and ($a.labels | length) == 0 and (($a.issues // []) | length) == 0 and (($a.engineReports // []) | length) == 0 and ($opened | length) == 0 and ($pushed | length) == 0 then "nothing" else $a.outcome end),
+                 title: ($a.title // null),
+                 summary: ($a.summary // ""),
+                 reason: (if ($left | length) > 0 then ((if $a.reason then $a.reason + "; " else "" end) + "left out: " + ($left | join("; "))) else $a.reason end),
+                 comments: $a.comments, labels: $a.labels, issues: ($a.issues // []),
+                 engineReports: ($a.engineReports // []),
+                 timedOut: ($a.timedOut // false),
+                 pullRequests: $opened, pushes: $pushed}}' \
+              > "${RUNNER_TEMP}/pc-agent-report.json"
+            PC_AGENT_OIDC=""
             if [ -n "${CONTROL_PLANE:-}" ] && [ -n "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" ]; then
-              PC_PR_OIDC=$(curl -sS -m 20 \
+              PC_AGENT_OIDC=$(curl -sS -m 20 \
                 -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN:-}" \
                 "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${CONTROL_PLANE}" \
-                | jq -r '.value // empty') || PC_PR_OIDC=""
+                | jq -r '.value // empty') || PC_AGENT_OIDC=""
             fi
-            if [ -n "$PC_PR_OIDC" ]; then
-              # BASED ON THE BRANCH THIS RAN ON: a fix or a spec of `feature/x` belongs on
-              # `feature/x`, not on the default branch with every commit of `feature/x` beside it.
-              jq -n --arg head "$PC_PR_HEAD" --arg base "${GITHUB_REF_NAME}" \
-                --arg title "$PC_PR_TITLE" --rawfile body "$PC_PR_BODY" --arg draft "$PC_PR_DRAFT" \
-                --argjson hold "$PC_PR_HOLD" \
-                '{head: $head, base: $base, title: $title, body: $body, draft: ($draft == "draft"), holdAutoMerge: $hold}' \
-                > "${RUNNER_TEMP}/pc-pr-request.json"
-              PC_PR_STATUS=$(curl -sS -m 60 -o "${RUNNER_TEMP}/pc-pr-answer.json" -w '%{http_code}' \
-                -X POST \
-                -H "Authorization: Bearer ${PC_PR_OIDC}" \
-                -H 'content-type: application/json' \
-                --data-binary "@${RUNNER_TEMP}/pc-pr-request.json" \
-                "${CONTROL_PLANE}/api/cloud/pull-requests") || PC_PR_STATUS=000
-              if [ "$PC_PR_STATUS" = "201" ] || [ "$PC_PR_STATUS" = "200" ]; then
-                echo "Opened $(jq -r '.url // "the pull request"' "${RUNNER_TEMP}/pc-pr-answer.json")"
-                return 0
-              fi
-              echo "::warning::the control plane did not open the pull request (HTTP ${PC_PR_STATUS}): $(head -c 300 "${RUNNER_TEMP}/pc-pr-answer.json" 2>/dev/null)"
+            [ -n "$PC_AGENT_OIDC" ] || {
+              echo "::error::no token to report the agent's run with"
+              exit 1
+            }
+            PC_AGENT_STATUS=$(curl -sS -m 60 -o "${RUNNER_TEMP}/pc-agent-answer.json" -w '%{http_code}' \
+              -X POST \
+              -H "Authorization: Bearer ${PC_AGENT_OIDC}" \
+              -H 'content-type: application/json' \
+              --data-binary "@${RUNNER_TEMP}/pc-agent-report.json" \
+              "${CONTROL_PLANE}/api/cloud/agent") || PC_AGENT_STATUS=000
+            if [ "$PC_AGENT_STATUS" != "200" ]; then
+              echo "::error::the Control Center did not take the agent's report (HTTP ${PC_AGENT_STATUS}): $(head -c 300 "${RUNNER_TEMP}/pc-agent-answer.json" 2>/dev/null)"
+              exit 1
             fi
-            echo "::warning::opening the pull request with this job's own token, so this repository's CI will not run on it until something pushes to it"
-            # A HOLD SURVIVES THE FALLBACK (#2307): no plane applied it, so the job writes the
-            # auto-merge marker itself, OFF — which only withdraws (the plane honours an intent
-            # marker on a pull request a bot opened, and adopts it rather than its own setting).
-            if [ "$PC_PR_HOLD" = true ]; then
-              printf '\n\n<!-- predictable-code:auto-merge off method=squash -->\n' >> "$PC_PR_BODY"
-            fi
-            PC_PR_DRAFT_FLAG=""
-            [ "$PC_PR_DRAFT" = "draft" ] && PC_PR_DRAFT_FLAG="--draft"
-            # shellcheck disable=SC2086
-            gh pr create $PC_PR_DRAFT_FLAG \
-              --title "$PC_PR_TITLE" \
-              --body-file "$PC_PR_BODY" \
-              --head "$PC_PR_HEAD" \
-              --base "${GITHUB_REF_NAME}"
-          }
+            echo "Reported the agent's run ${PC_TARGET}; the Control Center opened its issues and posted its comments and labels"
+            [ "$(jq -r '.outcome' "$AGENT_FILE")" = "failed" ] && exit 1
+            exit 0
+          fi
 
           # ──────────────────────────────────────────────────────────────────────────
           # A PULL REQUEST REVIEW (#2367): THE FIX IS STACKED, THE RESULT IS REPORTED.
@@ -3221,7 +4136,12 @@ jobs:
               case "${PC_COMMAND}" in
                 spec-new) CHANGE="created" ;;
                 spec-generate) CHANGE="generated by a model from the description a person wrote" ;;
-                spec-describe) CHANGE="description set" ;;
+                spec-describe)
+                  if [ "${SPEC_REDERIVED:-}" = "yes" ]; then
+                    CHANGE="description set; requirements derived again: ${SPEC_ADDED:-0} added, ${SPEC_REMOVED:-0} removed, ${SPEC_CONFLICTS:-0} of a person's in conflict"
+                  else
+                    CHANGE="description set"
+                  fi ;;
                 requirement-update) CHANGE="requirement ${PC_TARGET#*/} changed: ${PC_TEXT}" ;;
                 requirement-remove) CHANGE="requirement ${PC_TARGET#*/} removed" ;;
                 *) CHANGE="requirement added: ${PC_TEXT}" ;;
@@ -3281,6 +4201,20 @@ jobs:
                   fi
                   echo
                   echo "Review them as you would a colleague's: a requirement that reaches a verdict says whether the code does this, not whether this is what you want."
+                elif [ "${PC_COMMAND}" = "spec-describe" ] && [ "${SPEC_REDERIVED:-}" = "yes" ]; then
+                  # A DESCRIPTION EDIT THAT DERIVED THE REQUIREMENTS AGAIN (#2563). The description is
+                  # the person's, word for word; the requirements below were written by a model from
+                  # it, so the "no AI generated this text" sentence would be false here.
+                  echo "A person edited this spec's description in the Predictable Control Center. Its requirements had been derived from the description, so **a model derived them again from the new one**, using this repository's own key, in its own Actions (\`${TAG}\`): the ones the new description still implies are kept with their ids, the ones it no longer implies are removed, and what it now implies is added. A requirement a person added is never removed. Only the spec file is in this change."
+                  echo
+                  RECONCILED="${RUNNER_TEMP}/pc-spec-reconciled.md"
+                  if [ -s "$RECONCILED" ]; then
+                    cat "$RECONCILED"
+                  else
+                    echo "The new description implies exactly the requirements the spec already had: none was added or removed, and none of a person's contradicts it."
+                    echo
+                  fi
+                  echo "Every requirement added passed the canonical requirement check before it was written, as a generated one does."
                 else
                   echo "A person wrote this in the Predictable Control Center, and \`${TAG}\` recorded it in the spec's Markillo file with a deterministic command in this repository's own Actions — **no AI generated this text**. Only the spec file is in this change."
                 fi
@@ -3331,7 +4265,7 @@ jobs:
                 exit 1
               }
               AGENT_OUT="${RUNNER_TEMP}/predictable-agent.ndjson"
-              IMPL=$(jq -c 'select(.type == "result") | .predictable_implement // empty' "$AGENT_OUT" 2>/dev/null | tail -n 1 || true)
+              IMPL=$(jq -cR 'fromjson? | objects | select(.type == "result") | .predictable_implement // empty' "$AGENT_OUT" 2>/dev/null | tail -n 1 || true)
               [ -n "$IMPL" ] || IMPL='{}'
               OUTCOME=$(printf '%s' "$IMPL" | jq -r '.outcome // empty' 2>/dev/null || true)
               case "$OUTCOME" in
@@ -3355,7 +4289,9 @@ jobs:
                 "",
                 "The verdict: \(.reason | inert)",
                 (if (($c.pending // []) | length) > 0 then "", "### Not verified yet", "", ($c.pending[] | "- `\(.reqId)` (\(.status)) — \(.description | inert)") else empty end),
-                (if (($c.introduced // []) | length) > 0 then "", "### Findings the change added", "", ($c.introduced[:50][] | "- \(. | inert)") else empty end)' \
+                (if (($c.introduced // []) | length) > 0 then "", "### Findings the change added", "", ($c.introduced[:50][] | "- \(. | inert)") else empty end),
+                "",
+                (if has("testsChanged") | not then empty elif (.testsChanged | length) > 0 then "Tests added or changed: " + ((.testsChanged[:50]) | map(inert) | join(", ")) else "**No test was added or changed by this run.** None of the project tests exercises what it wrote." end)' \
                 > "${RUNNER_TEMP}/pc-implement-gate.md" 2>/dev/null <<< "$IMPL" || : > "${RUNNER_TEMP}/pc-implement-gate.md"
               {
                 echo "**Implementing spec \`${SPEC_ID:-?}\`** · \`${SPEC_FILE}\`"
@@ -3369,7 +4305,10 @@ jobs:
                 echo
                 cat "${RUNNER_TEMP}/pc-implement-gate.md"
                 echo
-                echo "Review the code as you would a colleague's: a verified requirement says the code does what the spec states, not that the spec is what you want."
+                # WHAT "VERIFIED" COVERS (#2557): the requirements, never the rest of the description.
+                # On Bridge a spec describing bridge generation was reported done with only the
+                # decision functions its requirements state, wired into nothing.
+                echo "The analysis checks the spec's requirements, not the rest of its description: what the change does beyond them is for review. Review the code as you would a colleague's: a verified requirement says the code does what the spec states, not that the spec is what you want."
               } > "${RUNNER_TEMP}/pc-implement-body-whole.md"
               head -c 59000 "${RUNNER_TEMP}/pc-implement-body-whole.md" > "${RUNNER_TEMP}/pc-implement-body.md"
               {
@@ -3535,11 +4474,16 @@ jobs:
             # own stream; THIS step marks it ready when the batch ends, so its end state never
             # depends on the Control Center surviving a multi-hour batch.
             if [ "${PC_COMMAND}" = "fix-all-agent" ]; then
-              FIX_OUTCOME=$(jq -r 'select(.type == "result") | .predictable_fix.outcome // empty' \
+              FIX_OUTCOME=$(jq -rR 'fromjson? | objects | select(.type == "result") | .predictable_fix.outcome // empty' \
                 "${RUNNER_TEMP}/predictable-agent.ndjson" 2>/dev/null | tail -n 1 || true)
               # How many defects the branch holds verified fixes for, off the driver's last round.
-              VERIFIED=$(jq -s '[.[] | select(.subtype == "predictable_fix_round")] | last | (.verified // []) | length' \
-                "${RUNNER_TEMP}/predictable-agent.ndjson" 2>/dev/null || echo 0)
+              # Each line read on its own (`fromjson?`): the driver's stream ends with its closing summary
+              # in prose, and a slurp of the whole file failed on it, read 0, and a batch that verified
+              # every defect opened no pull request.
+              VERIFIED=$(jq -cR 'fromjson? | objects | select(.subtype == "predictable_fix_round")' \
+                "${RUNNER_TEMP}/predictable-agent.ndjson" 2>/dev/null \
+                | jq -s 'last | (.verified // []) | length' 2>/dev/null | tr -cd '0-9' || true)
+              VERIFIED=${VERIFIED:-0}
               # NOTHING VERIFIED, NOTHING PROPOSED. MEASURED on staging (2026-10-20): a batch that
               # verified 0 of 27 opened draft #3 with no changed file, and the Control Center offered
               # it for review and merge. The branch is pushed only when it holds a verified commit or
@@ -3624,7 +4568,7 @@ jobs:
             #   .claude/settings.local.json
             #   hint: Use -f if you really want to add them.
             #
-            # MEASURED end to end on sunner-predictable, run 35634785114: a `fix-agent`
+            # MEASURED end to end on a connected repository: a `fix-agent`
             # for FIN-0001 did its work, and this step then died on the line meant to
             # stage it. The step runs under `bash -e`, so a non-zero `git add` ends the
             # job — a complete fix thrown away at the last step, exactly the shape the
@@ -3646,7 +4590,7 @@ jobs:
             # `RESULT: not fixed — why`), quoted beside the run's verdict. Only ever quoted: the
             # verdict is this run's own re-analysis, never the agent's word.
             agent_result() {
-              jq -r 'select(.type == "result") | .result // empty' \
+              jq -rR 'fromjson? | objects | select(.type == "result") | .result // empty' \
                 "${RUNNER_TEMP}/predictable-agent.ndjson" 2>/dev/null \
                 | grep -E '^[[:space:]]*RESULT:' | tail -n 1 | sed 's/^[[:space:]]*//' || true
             }
@@ -3668,15 +4612,15 @@ jobs:
             # `continue` or `failed`. Read, never trusted alone: a `fixed` is still verified below.
             FIX_OUTCOME=""
             if [ "${PC_COMMAND}" = "fix-agent" ]; then
-              FIX_OUTCOME=$(jq -r 'select(.type == "result") | .predictable_fix.outcome // empty' \
+              FIX_OUTCOME=$(jq -rR 'fromjson? | objects | select(.type == "result") | .predictable_fix.outcome // empty' \
                 "${RUNNER_TEMP}/predictable-agent.ndjson" 2>/dev/null | tail -n 1 || true)
               # No result line, but the Run step found the last round verified (see there).
               if [ -z "$FIX_OUTCOME" ] && [ "${PC_FIX_VERIFIED_DESPITE_EXIT:-}" = "yes" ]; then
                 FIX_OUTCOME=fixed
               fi
-              FIX_REASON=$(jq -r 'select(.type == "result") | .predictable_fix.reason // empty' \
+              FIX_REASON=$(jq -rR 'fromjson? | objects | select(.type == "result") | .predictable_fix.reason // empty' \
                 "${RUNNER_TEMP}/predictable-agent.ndjson" 2>/dev/null | tail -n 1 || true)
-              FIX_ROUNDS=$(jq -r 'select(.type == "result") | .predictable_fix.rounds // empty' \
+              FIX_ROUNDS=$(jq -rR 'fromjson? | objects | select(.type == "result") | .predictable_fix.rounds // empty' \
                 "${RUNNER_TEMP}/predictable-agent.ndjson" 2>/dev/null | tail -n 1 || true)
               # A RUN THAT ENDED BEFORE THE AGENT HAD A TURN says its own reason: "the agent changed no
               # source, so it is still reported" was printed over a defect the analysis could not see.
@@ -3712,7 +4656,10 @@ jobs:
               [ "${PC_COMMAND}" = "fix-agent" ] \
                 && not_fixed "The agent changed no source, so the defect \`${PC_TARGET}\` is still reported."
               echo "::notice::the fix did not change any source; nothing to propose"
-              echo "No change was kept. \`fix-issue\` restores its snapshot when its accept gates do not hold, so this finding needs a different remedy." >> "$GITHUB_STEP_SUMMARY"
+              NOT_KEPT="No change was kept. \`fix-issue\` restores its snapshot when its accept gates do not hold, so this finding needs a different remedy."
+              [ "${PC_COMMAND}" = "autofix" ] \
+                && NOT_KEPT="No autofix was kept: \`predictable autofix\` puts every file back when a fix's re-analysis still reports its defect or the build gains an error, and its result line above names which step refused each."
+              echo "$NOT_KEPT" >> "$GITHUB_STEP_SUMMARY"
               exit 0
             fi
 
@@ -3726,6 +4673,11 @@ jobs:
             else
               MADE_BY="\`predictable analyze fix-issue\`"
               HOW="**This is not an agent's work.** \`predictable analyze fix-issue\` edits narrowly and keeps the edit only if its own accept gates hold, so what is here was re-checked before it was proposed. It is still a change to your source, and it is here to be reviewed."
+            fi
+            # AUTOFIX (#2585) is the program's too, and says which program and what it re-checked.
+            if [ "${PC_COMMAND}" = "autofix" ]; then
+              MADE_BY="\`predictable autofix\`, which applies the edits the analysis decided, with no model"
+              HOW="**This is not an agent's work.** \`predictable autofix\` applies the edit the analysis recorded for each defect and keeps it only when its own re-analysis no longer reports the defect and the build gained no error, so every edit here was re-checked before it was proposed. It is still a change to your source, and it is here to be reviewed."
             fi
             # WHAT THIS ATTEMPT CHANGED, read from the index before it is committed, for the fix
             # branch's `.analysis.json` (#2240): the Control Center holds no tree, so this is the
@@ -3823,8 +4775,35 @@ jobs:
               else
                 push_or_explain
               fi
+              # WHY THE CHANGE IS NEEDED COMES FIRST, in the analysis's own words: the finding's sentence
+              # from the defect pages of the analysis the fix started from (`specs/.data/defects/`,
+              # the rows the Control Center lists), matched by the key it was dispatched with. An
+              # autofix's target is a batch, whose defects the Control Center lists beside it.
+              PC_WHY=""
+              if [ "${PC_COMMAND}" != "autofix" ]; then
+                PC_WHY=$(cat ".predictable-code/${GITHUB_REF_NAME}/.predictable-code/specs/.data/defects/"*/*.json 2>/dev/null \
+                  | jq -r --arg key "${PC_FINDING:-$PC_TARGET}" '.rows[]? | .finding? // empty
+                      | select((.fqn + "|" + (.vc // .category // "")) == $key) | .message // empty' 2>/dev/null \
+                  | sed -n 1p || true)
+              fi
               {
+                echo "## Why"
+                echo
+                if [ "${PC_COMMAND}" = "autofix" ]; then
+                  echo "The analysis of \`${GITHUB_REF_NAME}\` reports the defects of autofix batch \`${PC_TARGET}\`, each with an edit it decided would remove it; the Control Center lists each defect with the analysis's sentence about it."
+                elif [ -n "$PC_WHY" ]; then
+                  echo "The analysis of \`${GITHUB_REF_NAME}\` reports \`${PC_FINDING:-$PC_TARGET}\`:"
+                  echo
+                  printf '%s\n' "$PC_WHY" | sed 's/^/> /'
+                else
+                  echo "The analysis of \`${GITHUB_REF_NAME}\` reports \`${PC_FINDING:-$PC_TARGET}\`; its sentence is on the finding in the Control Center."
+                fi
+                echo
+                echo "## What changed"
+                echo
                 echo "A fix for \`${PC_TARGET}\`, produced by \`${TAG}\` in this repository's own Actions with ${MADE_BY}."
+                echo
+                echo "## How it was verified"
                 echo
                 echo "${HOW}"
                 echo
@@ -3832,7 +4811,11 @@ jobs:
               } > /tmp/pc-fix-body.md
               # BASED ON THE BRANCH THIS RAN ON (`open_pull_request` sends `${GITHUB_REF_NAME}`),
               # which is the one the fix branch was cut from.
-              open_pull_request "$BRANCH" "Predictable Code fix: ${PC_TARGET}" /tmp/pc-fix-body.md
+              if [ "${PC_COMMAND}" = "autofix" ]; then
+                open_pull_request "$BRANCH" "Predictable Code autofix (${PC_TARGET})" /tmp/pc-fix-body.md
+              else
+                open_pull_request "$BRANCH" "Predictable Code fix: ${PC_TARGET}" /tmp/pc-fix-body.md
+              fi
             fi
             # THE DETERMINISTIC FIX ENDS HERE: it is one pass, and its own accept gates already
             # re-checked it before it was kept.
