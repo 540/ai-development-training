@@ -3,9 +3,9 @@ predictable: overview
 ---
 ## Project overview
 
-`base` — “Comparador de coches sobre la API de [fueleconomy.gov](https://www.fueleconomy.gov/feg/ws/) (EPA): listado por año y marca con buscador y filtros, ficha de cada versión y comparación lado a lado de hasta tres coches.” 3 modules. 1 carries an inferred requirement, 8 requirements: 8 violated. 1 stated failure.
+`base` — “Comparador de coches sobre la API de [fueleconomy.gov](https://www.fueleconomy.gov/feg/ws/) (EPA): listado por año y marca con buscador y filtros, ficha de cada versión y comparación lado a lado de hasta tres coches.” 3 modules. 1 carries an inferred requirement, 9 requirements: 9 violated. 1 stated failure.
 
-Needs attention: 8 violated requirements, all in `src`. The analysis produced 9 obligations in all: 2 not known to be reached by any caller and 7 the deciders each state a trigger for. The requirements and the observed behaviours are on the specification pages themselves, and Needs attention below lists one finding per class of defect, so a class with several findings gets one row and the rest are on the pages below.
+Needs attention: 9 violated requirements, all in `src`. The analysis produced 10 obligations in all: 2 not known to be reached by any caller and 8 the deciders each state a trigger for. The requirements and the observed behaviours are on the specification pages themselves, and Needs attention below lists one finding per class of defect, so a class with several findings gets one row and the rest are on the pages below.
 
 `obligation` — one thing this run had to settle about one operation, most often that a particular failure cannot be reached. The 85 above are counted in these, and an obligation is not a finding: one the run could not settle reaches a page only when it can be stated as something a caller could act on.
 `class of defect` — the family a row stands for, not one occurrence. A class can hold several distinct checks, so one row can stand for several findings. The module list further down gives each file's own counts.
@@ -15,7 +15,8 @@ Needs attention: 8 violated requirements, all in `src`. The analysis produced 9 
 
 Each of these is stated in full on its own page. They are ordered by how much of the system each CLASS of defect takes with it when it happens. Within one class the order is not a ranking — this run recorded the same reading priority for all of them. That order is this page's own, from a fixed table of defect classes: the run itself recorded the same severity for every finding, so the ordering here is ours and not a measurement, and which of them matters most in your code is your judgement rather than one this analysis made. Whether a caller can reach any of them is undecided too — nothing in this run settled that.
 - [A failure is answered as an empty result](src/App.tsx.spec.md)
-- [`localStorage.setItem` throws when the browser denies storage access or storage is full, and no handler catches it](src/App.tsx.spec.md)
+- [`valores` is a lazy sequence and is consumed twice](src/App.tsx.spec.md)
+- [`localStorage.setItem` can throw](src/App.tsx.spec.md)
 
 ### How these numbers reconcile
 
@@ -25,7 +26,7 @@ Each of these is stated in full on its own page. They are ordered by how much of
 
 Modules: App · Main · Vite-env
 
-- `App.tsx` — Provides `App`, `pedir.lambda` and `Home.onChange`. Requires for `lambda_162_76`: the `ok` of `r` is present and is not falsy [violated]. `lambda_162_76` can fail with the error `fallo` when the `ok` of `r` is not true. 8 requirements: 8 violated. 1 stated failure.
+- `App.tsx` — Provides `App`, `pedir.lambda` and `Home.onChange`. Requires for `lambda_162_76`: the `ok` of `r` is present and is not falsy [violated]. `lambda_162_76` can fail with the error `fallo` when the `ok` of `r` is not true. 9 requirements: 9 violated. 1 stated failure.
 
 A requirement is a condition an operation needs in order not to fail in the way its own row names — an operation with several failures carries a row for each, and meeting one says nothing about the others. Some a caller supplies, others the operation establishes and checks itself. Nobody has checked the callers.
 

@@ -10,7 +10,7 @@
  "ONE module: its specs (with each requirement row's kind), the requirement↔finding join, its findings and their presentations, code locations, agent reviews, formality, witness evidence and proposals, contracts, diagnoses, theorems and inferred requirements (FIN-####). Its `requirementAnalysis` rows: per-requirement analysis join — displayed finding-first status ('issue' even when the mechanical flag says verified, EXCEPT a row enforced by a project callee, which is `safe` HERE because the check was found one call away; the spec page states that same row as a stated failure, so the two labels differ deliberately and `safe` here is what suppresses a duplicate defect row), subject FQN, scenario vc, unsafe entry points. Best-effort association: a finding whose condition cannot be rendered mints no requirement row (join via inferred-analysis.json's (fqn, vc)). Each row's `sites` lists every covered site the join resolved, each with that site's own status and FIN id; the row-level fields are its deciding site (the first of the worst status), so a (fqn, vc) join reads `sites`, never `scenarioVc` alone",
  "module-names/<n>.json":
  "page n of every module's id, label, outline number and file, in tree order — what a module search scans",
- "generatedAt": "2026-11-16T12:30:34+00:00[UTC]",
+ "generatedAt": "2026-11-18T21:53:46+00:00[UTC]",
  "functions/<b>.json":
  "bucket b of the call graph: one record per function (module, caller and callee counts, at most a page of each with the facts its box states)",
  "function-names/<k>.json":

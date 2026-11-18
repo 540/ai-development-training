@@ -6,7 +6,7 @@ predictable: spec
 - **Name:** src/App.tsx
 
 ### Description
-`App.tsx` — App. This project's call graph records DIRECT calls only, so a function passed to a container, destructured into an exported binding, or reached through a dynamic lookup is not one it can see. Within that limit it records no call to this module. At least one of its operations is exported. `App` builds `cambiarComparar`, and no requirement here is about what runs inside it. A throw was noticed in `pedir` that this analysis could not decide, so no requirement here says when it happens. REFUTED: “`lambda` throws `Error` unless the `ok` of `r` is present and is not falsy.” 8 requirements: 8 violated. 1 stated failure.
+`App.tsx` — App. This project's call graph records DIRECT calls only, so a function passed to a container, destructured into an exported binding, or reached through a dynamic lookup is not one it can see. Within that limit it records no call to this module. At least one of its operations is exported. `App` builds `cambiarComparar`, and no requirement here is about what runs inside it. A throw was noticed in `pedir` that this analysis could not decide, so no requirement here says when it happens. REFUTED: “`lambda` throws `Error` unless the `ok` of `r` is present and is not falsy.” 9 requirements: 9 violated. 1 stated failure.
 
 ### Declarations
 
@@ -22,13 +22,13 @@ predictable: spec
 - `litros`(`mpg`) — internal, no requirement inferred
 - `kwh`(`x`) — internal, no requirement inferred
 - `km`(`millas`) — internal, no requirement inferred
-- `convertir`(`d`) — internal; at line 212: `nombresCombustible` is asked about a key that was not checked against its own entries
+- `convertir`(`d`) — internal; at line 212: Lookup in `nombresCombustible` can hit a built-in property
 - `leerComparar`() — internal; a failure is answered as an empty result
-- `App`() — `localStorage.setItem` throws when the browser denies storage access or storage is full, and no handler catches it
-- `Home`(`props`) — internal; at line 444: `nombresCombustible` is asked about a key that was not checked against its own entries; at line 481: `colores` is asked about a key that was not checked against its own entries
+- `App`() — `localStorage.setItem` can throw
+- `Home`(`props`) — internal; at line 444: Lookup in `nombresCombustible` can hit a built-in property; at line 481: Lookup in `colores` can hit a built-in property
 - `Esqueleto`(`props`) — internal, no requirement inferred
-- `Detalle`(`props`) — internal; at line 602: `colores` is asked about a key that was not checked against its own entries
-- `Comparar`(`props`) — internal; at line 774: `colores` is asked about a key that was not checked against its own entries
+- `Detalle`(`props`) — internal; at line 602: Lookup in `colores` can hit a built-in property
+- `Comparar`(`props`) — internal; at line 774: Lookup in `colores` can hit a built-in property; `valores` is a lazy sequence and is consumed twice
 
 `pedir` — Declares 1 operation: `lambda_162`(`r`).
 
@@ -82,7 +82,7 @@ When the `ok` of `r` is not true, `pedir.lambda_162_76` fails saying "fallo".
 
 <!-- predictable:throws=Error -->
 
-<!-- predictable:canonical=`pedir.lambda_162_76` requires that the `ok` of `r` is present and is not empty, zero or false. -->
+<!-- predictable:canonical=`pedir.lambda_162_76` only works when the `ok` of `r` is present and is not empty, zero or false. -->
 
 - **Code locations:** [src/App.tsx:162-165](../../src/App.tsx#L162-L165)
 
@@ -93,7 +93,7 @@ When the `ok` of `r` is not true, `pedir.lambda_162_76` fails saying "fallo".
 #### App.convertir <!-- predictable:group -->
 
 ##### BEH-0001 [implemented, violated]
-At line 212: `nombresCombustible` is asked about a key that was not checked against its own entries. `nombresCombustible` is a table of fixed entries, and this asks it about a key the code did not choose. Indexing answers "what does this name resolve to", which on an ordinary object includes everything the language put there before the author's own keys — so a key like `constructor` comes back with a value, and it is neither absent nor falsy. Testing the RESULT cannot separate the two cases; only asking whether the key is one of the table's OWN can. Use a presence test, or a map that holds only what was put in it. Safe to rely on when the key is confirmed to be one of `nombresCombustible`'s own entries.
+At line 212: Lookup in `nombresCombustible` can hit a built-in property. A key such as `constructor` returns a value that `nombresCombustible` never held, and it is neither absent nor falsy. Safe to rely on when the key is confirmed to be one of `nombresCombustible`'s own entries.
 
 <!-- predictable:behaviour -->
 
@@ -108,7 +108,7 @@ At line 212: `nombresCombustible` is asked about a key that was not checked agai
 #### App.leerComparar <!-- predictable:group -->
 
 ##### BEH-0002 [implemented, violated]
-A failure is answered as an empty result. When the work inside this `try` fails, the handler catches every failure and returns an empty collection, which is what this function also returns when there is genuinely nothing. A caller cannot tell a failure from an empty result, so it shows or stores "none" where it should have reported that the work did not happen. Return something the success path never returns, or let the failure out. Safe to rely on when a caller of this function can tell a failure from an empty result.
+A failure is answered as an empty result. The handler catches every failure and returns an empty collection. Callers cannot tell a failure from "nothing found". Safe to rely on when a caller of this function can tell a failure from an empty result.
 
 <!-- predictable:behaviour -->
 
@@ -123,7 +123,7 @@ A failure is answered as an empty result. When the work inside this `try` fails,
 #### App.App <!-- predictable:group -->
 
 ##### BEH-0003 [implemented, violated]
-`localStorage.setItem` throws when the browser denies storage access or storage is full, and no handler catches it. `localStorage.setItem` throws when the browser refuses storage access (site data blocked in its settings, or a sandboxed frame) and when the storage quota is full. The arguments cannot prevent this, and a browser with storage allowed and space free will never show it. No `try`/`catch` covers this call, so the exception propagates out of this function. Safe to rely on when `localStorage.setItem` at this line does not let an exception escape when the browser denies storage access or the quota is full.
+`localStorage.setItem` can throw. Browsers that block storage throw here, as does a full storage quota, and nothing catches it. Safe to rely on when `localStorage.setItem` at this line does not let an exception escape when the browser denies storage access or the quota is full.
 
 <!-- predictable:behaviour -->
 
@@ -138,7 +138,7 @@ A failure is answered as an empty result. When the work inside this `try` fails,
 #### App.Home <!-- predictable:group -->
 
 ##### BEH-0004 [implemented, violated]
-At line 444: `nombresCombustible` is asked about a key that was not checked against its own entries. `nombresCombustible` is a table of fixed entries, and this asks it about a key the code did not choose. Indexing answers "what does this name resolve to", which on an ordinary object includes everything the language put there before the author's own keys — so a key like `constructor` comes back with a value, and it is neither absent nor falsy. Testing the RESULT cannot separate the two cases; only asking whether the key is one of the table's OWN can. Use a presence test, or a map that holds only what was put in it. Safe to rely on when the key is confirmed to be one of `nombresCombustible`'s own entries.
+At line 444: Lookup in `nombresCombustible` can hit a built-in property. A key such as `constructor` returns a value that `nombresCombustible` never held, and it is neither absent nor falsy. Safe to rely on when the key is confirmed to be one of `nombresCombustible`'s own entries.
 
 <!-- predictable:behaviour -->
 
@@ -151,7 +151,7 @@ At line 444: `nombresCombustible` is asked about a key that was not checked agai
 <!-- predictable:code-locations=.predictable-code/specs/locations/SPEC-001/BEH-0004.md -->
 
 ##### BEH-0005 [implemented, violated]
-At line 481: `colores` is asked about a key that was not checked against its own entries. `colores` is a table of fixed entries, and this asks it about a key the code did not choose. Indexing answers "what does this name resolve to", which on an ordinary object includes everything the language put there before the author's own keys — so a key like `constructor` comes back with a value, and it is neither absent nor falsy. Testing the RESULT cannot separate the two cases; only asking whether the key is one of the table's OWN can. Use a presence test, or a map that holds only what was put in it. Safe to rely on when the key is confirmed to be one of `colores`'s own entries.
+At line 481: Lookup in `colores` can hit a built-in property. A key such as `constructor` returns a value that `colores` never held, and it is neither absent nor falsy. Safe to rely on when the key is confirmed to be one of `colores`'s own entries.
 
 <!-- predictable:behaviour -->
 
@@ -166,7 +166,7 @@ At line 481: `colores` is asked about a key that was not checked against its own
 #### App.Detalle <!-- predictable:group -->
 
 ##### BEH-0006 [implemented, violated]
-At line 602: `colores` is asked about a key that was not checked against its own entries. `colores` is a table of fixed entries, and this asks it about a key the code did not choose. Indexing answers "what does this name resolve to", which on an ordinary object includes everything the language put there before the author's own keys — so a key like `constructor` comes back with a value, and it is neither absent nor falsy. Testing the RESULT cannot separate the two cases; only asking whether the key is one of the table's OWN can. Use a presence test, or a map that holds only what was put in it. Safe to rely on when the key is confirmed to be one of `colores`'s own entries.
+At line 602: Lookup in `colores` can hit a built-in property. A key such as `constructor` returns a value that `colores` never held, and it is neither absent nor falsy. Safe to rely on when the key is confirmed to be one of `colores`'s own entries.
 
 <!-- predictable:behaviour -->
 
@@ -181,7 +181,7 @@ At line 602: `colores` is asked about a key that was not checked against its own
 #### App.Comparar <!-- predictable:group -->
 
 ##### BEH-0007 [implemented, violated]
-At line 774: `colores` is asked about a key that was not checked against its own entries. `colores` is a table of fixed entries, and this asks it about a key the code did not choose. Indexing answers "what does this name resolve to", which on an ordinary object includes everything the language put there before the author's own keys — so a key like `constructor` comes back with a value, and it is neither absent nor falsy. Testing the RESULT cannot separate the two cases; only asking whether the key is one of the table's OWN can. Use a presence test, or a map that holds only what was put in it. Safe to rely on when the key is confirmed to be one of `colores`'s own entries.
+At line 774: Lookup in `colores` can hit a built-in property. A key such as `constructor` returns a value that `colores` never held, and it is neither absent nor falsy. Safe to rely on when the key is confirmed to be one of `colores`'s own entries.
 
 <!-- predictable:behaviour -->
 
@@ -192,3 +192,16 @@ At line 774: `colores` is asked about a key that was not checked against its own
 - **Code locations:** [src/App.tsx:774](../../src/App.tsx#L774)
 
 <!-- predictable:code-locations=.predictable-code/specs/locations/SPEC-001/BEH-0007.md -->
+
+##### BEH-0008 [implemented, violated]
+`valores` is a lazy sequence and is consumed twice. `valores` produces its elements only when consumed, and it is consumed more than once. The second pass throws, sees nothing, or repeats all the work. Safe to rely on when `valores` is consumed at most once, or collected before it is used again.
+
+<!-- predictable:behaviour -->
+
+<!-- predictable:subject=App.Comparar -->
+
+<!-- predictable:vc=site.single-pass-sequence-reused.valores.b0baff2c -->
+
+- **Code locations:** [src/App.tsx:789](../../src/App.tsx#L789)
+
+<!-- predictable:code-locations=.predictable-code/specs/locations/SPEC-001/BEH-0008.md -->
