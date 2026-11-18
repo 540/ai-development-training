@@ -20,7 +20,9 @@
 # documentation is a change to your code, so each of those is proposed as a pull request on its
 # own branch. An analysis asks no model and is never handed a model key of yours: only a fix, a
 # spec whose requirements a model writes, or a run that writes the specs' missing descriptions —
-# each one started by a person — reads an `ANTHROPIC_API_KEY` secret. A pull request review you
+# each one started by a person — reads the key of the agent engine you chose: an `ANTHROPIC_API_KEY`
+# secret for Claude Code, `OPENAI_API_KEY` for Codex, `COPILOT_GITHUB_TOKEN` for GitHub Copilot
+# (never this job's own token, which can write to the repository). A pull request review you
 # turned on reads it too, when it is there, to explain what it found and propose a verified fix;
 # without it the review still runs, because only the analysis decides its check. So does a person's
 # edit of a spec's description, when that spec's requirements were derived from it by a model:
@@ -29,7 +31,7 @@
 # The stamp below is how the Control Center knows whether this repository is running a
 # current copy. It is compared as a NUMBER, never as a diff, so your own edits to this
 # file — a bigger `runner:`, a different `heap_mb` — are yours and are left alone.
-# predictable-workflow-version: 88
+# predictable-workflow-version: 89
 name: Predictable Code
 
 on:
@@ -574,8 +576,8 @@ jobs:
         id: engine
         # A STEP OF ITS OWN, APART FROM THE KEY CHECK BELOW, because GitHub names a step with
         # nothing but its conclusion. While the two refusals shared one step, its failure was read
-        # as a missing key: a repository configured for GitHub Copilot CLI, or for OpenCode
-        # inference, that HAD a key was remembered as missing one, and the Fix button sent its
+        # as a missing key: a repository configured for an engine a runner could not run (GitHub
+        # Copilot CLI until v89; OpenCode inference still), that HAD a key was remembered as missing one, and the Fix button sent its
         # reader to add a secret that changes nothing. Apart, each step that fails says one thing,
         # and `run-steps.ts` words each with its own remedy.
         #
@@ -599,8 +601,8 @@ jobs:
           # and then fails later for the real reason.
           #
           # MEASURED SPELLING: the field serialises the CONSTRUCTOR name — `claudeCode`,
-          # `copilotCli`, `opencodeCli` — not the `toKey` spellings (`claude`, `copilot`,
-          # `opencode`) that appear elsewhere in the codebase. Read from two real
+          # `copilotCli`, `codexCli`, `opencodeCli` — not the `toKey` spellings (`claude`,
+          # `copilot`, `codex`, `opencode`) that appear elsewhere in the codebase. Read from two real
           # `project.json` files. A check written against the short names would match
           # `claudeCode` by accident and `copilotCli` by accident too, which is worse than
           # not checking.
@@ -627,25 +629,15 @@ jobs:
           ENGINE=$(printf '%s' "${ENGINE}" | tr -cd 'A-Za-z0-9')
           echo "Configured engine: ${ENGINE}"
 
-          # NOT SHIPPED, AND SAID BEFORE ANYTHING IS DOWNLOADED. The runtime package
-          # carries `claude` and `opencode`; this repository pins no `copilot` at all, so
-          # a run configured for it would install 3.9 GB and then fail on a missing
-          # binary. The remedy is the customer's and it is one command, so it is named.
-          if [ "${ENGINE}" = "copilotCli" ]; then
-            echo "::error::this repository is configured to use GitHub Copilot CLI, which the Predictable runtime package does not ship — a hosted ${PC_COMMAND} cannot run it"
-            {
-              echo "### The configured engine is not available on a runner"
-              echo
-              echo 'This repository'"'"'s configuration (`project.json` on the `predictable-code-database` branch) selects **GitHub Copilot CLI**. The runtime package this workflow installs ships `claude` and `opencode`, and no `copilot` — so a hosted fix has nothing to run.'
-              echo
-              echo 'Either switch the project to an engine the package ships (`predictable settings engine set claude <model>`, or `opencode`), or run the fix from your own machine where your `copilot` CLI is installed and signed in.'
-            } >> "$GITHUB_STEP_SUMMARY"
-            exit 1
-          fi
+          # EVERY ENGINE A PERSON CAN CHOOSE RUNS HERE (v89, #2850, #2851): the provision step below
+          # installs the configured engine's pinned CLI — Claude Code, GitHub Copilot, Codex or
+          # OpenCode — so none is refused for a fix or an agent session. Only OpenCode INFERENCE is.
 
           # NO INFERENCE ON OPENCODE YET (#2234): a generation or a description run writes text
           # people read, and it must not carry a memory file the model was never meant to see.
-          # The `claude` it spawns runs isolated from every `CLAUDE.md`; OpenCode still reads
+          # The `claude` it spawns runs isolated from every `CLAUDE.md`, `codex` with
+          # `--ignore-user-config --ignore-rules` and no project doc, and `copilot` with
+          # `--no-custom-instructions` (its memory is off in prompt mode); OpenCode still reads
           # the checkout's and `~/.claude/CLAUDE.md`, and its isolation is #2239. Refused here,
           # before the download, rather than run leaking — the fix verbs read the main engine
           # and are not affected, and Claude is the default.
@@ -656,7 +648,7 @@ jobs:
               echo
               echo 'This repository'"'"'s configuration (`project.json` on the `predictable-code-database` branch) selects **OpenCode** for inference. A hosted '"${PC_COMMAND}"' does not run on it yet: OpenCode still reads memory files (`CLAUDE.md`) the model must not see in what it writes, and isolating it is tracked in #2239.'
               echo
-              echo 'Switch inference to Claude (`predictable settings inference-engine set claude <model>`), which runs isolated, and run it again.'
+              echo 'Switch inference to Claude Code, GitHub Copilot or Codex (`predictable settings inference-engine set claude <model>`), each of which runs isolated, and run it again.'
             } >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
@@ -717,6 +709,10 @@ jobs:
           # can print it. That is an exfiltration path wearing the clothes of a feature,
           # so the set of names this reads is closed and lives here.
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY || secrets.ORG_ANTHROPIC_KEY }}
+          # CODEX'S KEY (v89, #2850) and COPILOT'S TOKEN (#2851), each the one secret its engine is
+          # read from, closed like the pair above.
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
           # Which verb is asking, so the refusal names it — a spec generation told "a fix
           # needs a key" is sent looking for a fix it never asked for.
           PC_COMMAND: ${{ inputs.command }}
@@ -730,14 +726,55 @@ jobs:
           # AN ENGINE STEP THAT SAID NOTHING is read as the product's own fallback, Claude, so the
           # key is checked. Never as a pass: this step passing is what records a key as PRESENT.
           ENGINE="${PC_ENGINE:-claudeCode}"
-          # ONLY CLAUDE'S KEY IS CHECKED HERE, and only for Claude. OpenCode's credential
-          # depends on the MODEL its provider config names (a Groq model wants
-          # `GROQ_API_KEY`, an Anthropic one wants `ANTHROPIC_API_KEY`), and this step
-          # cannot know which without reading a config it does not have. Demanding the
-          # wrong one would be a refusal the reader cannot act on; the run reports the
-          # real requirement itself.
+          # EACH ENGINE'S OWN KEY (v89, #2850, #2851): Claude's pair below, Codex's `OPENAI_API_KEY`
+          # and Copilot's `COPILOT_GITHUB_TOKEN` — never the job's own token, which is
+          # `contents: write` and would sit beside a model reading the repository. OpenCode's credential depends on
+          # the MODEL its provider config names (a Groq model wants `GROQ_API_KEY`, an Anthropic one
+          # wants `ANTHROPIC_API_KEY`), and this step cannot know which without reading a config it
+          # does not have. Demanding the wrong one would be a refusal the reader cannot act on; the
+          # run reports the real requirement itself.
+          if [ "${ENGINE}" = "codexCli" ]; then
+            # A SELF-HOSTED RUNNER MAY BE SIGNED IN to Codex (`codex login`), as one may be to Claude
+            # Code below; whether it is, is the CLI's to say when it starts.
+            if [ -z "${OPENAI_API_KEY}" ] && [ "${PC_RUNNER_ENVIRONMENT:-}" = "self-hosted" ]; then
+              echo "No OPENAI_API_KEY: on this self-hosted runner, ${PC_COMMAND} runs on the machine's Codex sign-in if it has one."
+              exit 0
+            fi
+            if [ -z "${OPENAI_API_KEY}" ]; then
+              echo "::error::Codex needs an OPENAI_API_KEY secret on this repository, which it does not have"
+              {
+                echo "### No model key"
+                echo
+                echo 'This repository'"'"'s agent engine is **Codex**, which runs on this runner with a key that belongs to you. Set a secret named `OPENAI_API_KEY` that this repository can see — either on the repository (Settings -> Secrets and variables -> Actions) or on the organisation, shared with this repository — and try again.'
+                echo
+                echo 'ANALYSIS needs no key; only a run that asks a model does.'
+              } >> "$GITHUB_STEP_SUMMARY"
+              exit 1
+            fi
+            echo "A model key is configured."
+            exit 0
+          fi
+          if [ "${ENGINE}" = "copilotCli" ]; then
+            if [ -z "${COPILOT_GITHUB_TOKEN}" ] && [ "${PC_RUNNER_ENVIRONMENT:-}" = "self-hosted" ]; then
+              echo "No COPILOT_GITHUB_TOKEN: on this self-hosted runner, ${PC_COMMAND} runs on the machine's Copilot sign-in if it has one."
+              exit 0
+            fi
+            if [ -z "${COPILOT_GITHUB_TOKEN}" ]; then
+              echo "::error::GitHub Copilot needs a COPILOT_GITHUB_TOKEN secret on this repository, which it does not have"
+              {
+                echo "### No model key"
+                echo
+                echo 'This repository'"'"'s agent engine is **GitHub Copilot**, which runs on this runner with a token that belongs to you. Set a secret named `COPILOT_GITHUB_TOKEN` (a fine-grained token with the Copilot Requests permission) that this repository can see — either on the repository (Settings -> Secrets and variables -> Actions) or on the organisation, shared with this repository — and try again.'
+                echo
+                echo 'ANALYSIS needs no key; only a run that asks a model does.'
+              } >> "$GITHUB_STEP_SUMMARY"
+              exit 1
+            fi
+            echo "A model key is configured."
+            exit 0
+          fi
           if [ "${ENGINE}" != "claudeCode" ]; then
-            echo "Engine ${ENGINE} supplies its own credentials; not checking for an Anthropic key."
+            echo "Engine ${ENGINE} supplies its own credentials; not checking for a model key."
             exit 0
           fi
           # A SELF-HOSTED RUNNER MAY BE SIGNED IN TO A CLAUDE CODE ACCOUNT (#2490), and a machine that
@@ -915,8 +952,8 @@ jobs:
           tools=(node)
           # THE ENGINE THE CHECK ABOVE READ, and for a review — which that check does not run for,
           # since a review must run without an engine and the check refuses some — the same field of
-          # the same file, read the same way. Only to choose what to install: a Copilot repository
-          # gets no agent CLI (the package ships none for it), an OpenCode one gets OpenCode.
+          # the same file, read the same way. Only to choose what to install: the configured engine's
+          # pinned CLI (v89) — GitHub Copilot's, Codex's, OpenCode's, or Claude Code's by default.
           ENGINE="${PC_ENGINE:-}"
           if [ -z "${ENGINE}" ]; then
             ENGINE=claudeCode
@@ -931,7 +968,8 @@ jobs:
             fix|fix-agent|fix-all-agent|spec-generate|spec-fill-descriptions|spec-implement|plugins-discover|review|spec-describe|agent)
               case "${ENGINE}" in
                 opencodeCli) tools+=("aqua:anomalyco/opencode") ;;
-                copilotCli) ;;
+                copilotCli) tools+=("aqua:github/copilot-cli") ;;
+                codexCli) tools+=("aqua:openai/codex") ;;
                 *) tools+=("aqua:anthropics/claude-code") ;;
               esac
               ;;
@@ -1507,6 +1545,17 @@ jobs:
           # from its description derives them again with a model, and one of a spec nothing was
           # derived for asks none — so it is handed the key and never refused before it runs.
           ANTHROPIC_API_KEY: ${{ contains(fromJSON('["fix","fix-agent","fix-all-agent","spec-generate","spec-fill-descriptions","spec-implement","plugins-discover","review","spec-describe","agent"]'), inputs.command) && (secrets.ANTHROPIC_API_KEY || secrets.ORG_ANTHROPIC_KEY) || '' }}
+          # THE OTHER ENGINES' CREDENTIALS (v89, #2850, #2851), to the SAME verbs and no others.
+          # Codex reads `CODEX_API_KEY` (MEASURED on codex 0.169.0: `codex exec` ignores
+          # `OPENAI_API_KEY`), from the `OPENAI_API_KEY` secret a person adds; both names are set.
+          CODEX_API_KEY: ${{ contains(fromJSON('["fix","fix-agent","fix-all-agent","spec-generate","spec-fill-descriptions","spec-implement","plugins-discover","review","spec-describe","agent"]'), inputs.command) && secrets.OPENAI_API_KEY || '' }}
+          OPENAI_API_KEY: ${{ contains(fromJSON('["fix","fix-agent","fix-all-agent","spec-generate","spec-fill-descriptions","spec-implement","plugins-discover","review","spec-describe","agent"]'), inputs.command) && secrets.OPENAI_API_KEY || '' }}
+          # GitHub Copilot reads `COPILOT_GITHUB_TOKEN` (`copilot help environment`), from the secret
+          # of that name alone. NEVER THE JOB'S TOKEN, FOR ANY VERB: it is `contents: write` and
+          # `pull-requests: write`, and Copilot runs with every tool and the shell, so text planted in
+          # the code it reads (a review reads a pull request's head) could push or edit pull requests
+          # with it — the reason the agent's session holds nothing (#2599).
+          COPILOT_GITHUB_TOKEN: ${{ contains(fromJSON('["fix","fix-agent","fix-all-agent","spec-generate","spec-fill-descriptions","spec-implement","plugins-discover","review","spec-describe","agent"]'), inputs.command) && secrets.COPILOT_GITHUB_TOKEN || '' }}
           # Empty is NOT the same as unset for this knob: the product reads the variable
           # and an empty string is not a number, so it falls back to measured headroom —
           # which is what an empty input should mean.
@@ -3678,6 +3727,10 @@ jobs:
           # closed pair the Run step reads; under a name no tool this step runs looks for, so
           # nothing here can USE it as a credential.
           PC_MODEL_KEY: ${{ secrets.ANTHROPIC_API_KEY || secrets.ORG_ANTHROPIC_KEY }}
+          # The OTHER engines' credentials (v89, #2850, #2851), for the same one purpose: an agent fix
+          # on Codex held `OPENAI_API_KEY`, one on Copilot its `COPILOT_GITHUB_TOKEN`.
+          PC_CODEX_KEY: ${{ secrets.OPENAI_API_KEY }}
+          PC_COPILOT_KEY: ${{ secrets.COPILOT_GITHUB_TOKEN }}
           CONTROL_PLANE: ${{ inputs.control_plane }}
           VERDICT: ${{ steps.analyse.outputs.result }}
           TAG: ${{ steps.toolchain.outputs.tag }}
@@ -4738,7 +4791,7 @@ jobs:
               # project's findings fewer than at the start with none new; a `jq` over a sync read
               # a renamed function as fixed.
               if ( export PREDICTABLE_REPORTED_RUN=1
-                   unset ANTHROPIC_API_KEY ANTHROPIC_AUTH_TOKEN PC_MODEL_KEY GH_TOKEN
+                   unset ANTHROPIC_API_KEY ANTHROPIC_AUTH_TOKEN PC_MODEL_KEY PC_CODEX_KEY PC_COPILOT_KEY GH_TOKEN CODEX_API_KEY OPENAI_API_KEY COPILOT_GITHUB_TOKEN
                    PREDICTABLE_HOME="$PC_HOME" "$PC_HOME/launcher.sh" fix-check --key "${PC_FINDING}" \
                      --json --path "$PWD/.predictable-code" > "$VERIFY_JSON" 2> "$VERIFY_LOG" ); then
                 VERIFY_STATUS=0
@@ -4839,11 +4892,12 @@ jobs:
                 changed: [inputs | split("\t") | select(length >= 3)
                   | {path: (.[2:] | join("\t")), added: ((.[0] | tonumber?) // 0), removed: ((.[1] | tonumber?) // 0)}]}' \
               < "${RUNNER_TEMP}/pc-fix-numstat.txt")
-            # The model key's VALUE goes in as `PREDICTABLE_PUBLISH_REFUSE`, the one thing the
-            # publish refuses to commit — this job's agent had the key, and could have written it
-            # into the state directory.
-            ( export PREDICTABLE_PUBLISH_REFUSE="${PC_MODEL_KEY:-}" PREDICTABLE_ANALYSIS_FIX="$PC_FIX_JSON"
-              unset ANTHROPIC_API_KEY ANTHROPIC_AUTH_TOKEN PC_MODEL_KEY GH_TOKEN PREDICTABLE_REPORTED_RUN
+            # EVERY engine credential's VALUE goes in as `PREDICTABLE_PUBLISH_REFUSE`, one per line,
+            # the things the publish refuses to commit — this job's agent held its engine's, and
+            # could have written it into the state directory.
+            PC_REFUSE=$(printf '%s\n%s\n%s\n' "${PC_MODEL_KEY:-}" "${PC_CODEX_KEY:-}" "${PC_COPILOT_KEY:-}")
+            ( export PREDICTABLE_PUBLISH_REFUSE="$PC_REFUSE" PREDICTABLE_ANALYSIS_FIX="$PC_FIX_JSON"
+              unset ANTHROPIC_API_KEY ANTHROPIC_AUTH_TOKEN PC_MODEL_KEY PC_CODEX_KEY PC_COPILOT_KEY PC_REFUSE GH_TOKEN PREDICTABLE_REPORTED_RUN CODEX_API_KEY OPENAI_API_KEY COPILOT_GITHUB_TOKEN
               PREDICTABLE_HOME="$PC_HOME" "$PC_HOME/launcher.sh" publish ) \
               || echo "::warning::the verified analysis of ${BRANCH} was not published; the check below says what origin holds"
             PC_ANALYSED_BRANCH="$BRANCH"
